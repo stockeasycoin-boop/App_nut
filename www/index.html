@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>The Daily Ledger</title>
+<title>Plate — nutrition tracker</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
@@ -58,6 +58,22 @@ body{padding-top:env(safe-area-inset-top);}
 .bar-top .amt{color:var(--muted);}
 .bar-track{height:7px;border-radius:5px;background:var(--line);overflow:hidden;}
 .bar-fill{height:100%;border-radius:5px;}
+
+.trend-bars{position:relative;display:flex;align-items:flex-end;gap:6px;height:92px;}
+.tcol{flex:1;height:100%;display:flex;align-items:flex-end;}
+.tbar-fill{width:100%;border-radius:4px 4px 2px 2px;}
+.tgoal{position:absolute;left:0;right:0;border-top:1px dashed var(--muted);opacity:0.65;pointer-events:none;}
+.tgoal span{position:absolute;right:0;top:-13px;font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;}
+.trend-labels{display:flex;gap:6px;margin-top:6px;}
+.trend-labels .tlabel{flex:1;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted);}
+.trend-labels .tnow{color:var(--ink);font-weight:600;}
+.tstats{display:flex;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-family:var(--mono);font-size:11.5px;color:var(--muted);}
+
+.portion{margin-bottom:14px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;}
+.portion-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.portion-top .plabel{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);}
+.portion-top .pval{font-family:var(--mono);font-size:13px;font-weight:500;}
+.portion input[type=range]{width:100%;accent-color:var(--plum);margin:0;}
 
 .add-btn{width:100%;background:var(--ink);color:var(--paper);border:none;border-radius:10px;padding:14px;font-family:var(--sans);font-weight:600;font-size:15px;cursor:pointer;margin-bottom:16px;letter-spacing:0.01em;}
 .add-btn:active{opacity:0.85;}
@@ -122,7 +138,9 @@ label.f{display:block;font-family:var(--mono);font-size:10.5px;text-transform:up
 (function(){
 
 const API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+// Groq's vision-capable model. It's a reasoning model, so we send
+// reasoning_effort:"none" to skip the <think> preamble and get JSON directly.
+const MODEL = "qwen/qwen3.6-27b";
 
 const MACROS = [
   {key:'protein_g', label:'Protein', color:'#6b2d5c', unit:'g'},
@@ -175,6 +193,7 @@ let state = {
   draftImageMedia: null,
   draftImagePreview: null,
   draftEntry: null,
+  portion: 1,
   error: null,
   settingsSaved: false,
 };
@@ -218,6 +237,49 @@ function clampPct(v, goal){
   return Math.max(0, Math.min(1, v/goal));
 }
 
+// ---------- history / streaks ----------
+function entriesFor(date){
+  if(date === state.date) return state.entries;
+  try{
+    const raw = localStorage.getItem('dl_entries_'+date);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function shiftDate(date, delta){
+  const [y,m,d] = date.split('-').map(Number);
+  return todayStr(new Date(y, m-1, d+delta));
+}
+// The 7 days ending on the day being viewed, oldest first.
+function lastNDays(n){
+  const out = [];
+  for(let i=n-1;i>=0;i--){
+    const date = shiftDate(state.date, -i);
+    const entries = entriesFor(date);
+    out.push({date, entries, totals: computeTotals(entries), logged: entries.length>0});
+  }
+  return out;
+}
+// A day "hits" when calories land in 85-110% of goal and protein + fiber are met.
+function dayHitsGoals(totals, goals){
+  if(!goals.calories) return false;
+  const cal = totals.calories / goals.calories;
+  return cal >= 0.85 && cal <= 1.10
+    && totals.protein_g >= goals.protein_g
+    && totals.fiber_g >= goals.fiber_g;
+}
+function currentStreak(goals){
+  let streak = 0;
+  let cursor = state.date;
+  // Don't punish a today that's still in progress — start from yesterday if today is a miss.
+  if(!dayHitsGoals(computeTotals(entriesFor(cursor)), goals)) cursor = shiftDate(cursor, -1);
+  for(let i=0;i<365;i++){
+    if(!dayHitsGoals(computeTotals(entriesFor(cursor)), goals)) break;
+    streak++;
+    cursor = shiftDate(cursor, -1);
+  }
+  return streak;
+}
+
 // ---------- rendering ----------
 function render(){
   const root = document.getElementById('root');
@@ -226,7 +288,7 @@ function render(){
 
   root.innerHTML = `
     <div class="brand">
-      <h1>The Daily Ledger</h1>
+      <h1>Plate</h1>
       <button class="gear" id="settingsBtn" title="Settings">&#9881;</button>
     </div>
     <div class="tagline">a running tally of what's on your plate</div>
@@ -248,6 +310,8 @@ function render(){
       <div class="section-title">Micronutrients</div>
       ${MICROS.map(f=>barRow(f, totals, goals, false)).join('')}
     </div>
+
+    ${trendCard(goals)}
 
     <button class="add-btn" id="openAdd">+ Log food</button>
 
@@ -303,6 +367,47 @@ function ringSvg(totals, goals){
             <span>${m.label}</span>
             <span class="val">${Math.round(totals[m.key])}/${goals[m.key]}${m.unit}</span>
           </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function trendCard(goals){
+  const days = lastNDays(7);
+  const streak = currentStreak(goals);
+  const loggedDays = days.filter(d=>d.logged);
+  const avg = loggedDays.length
+    ? Math.round(loggedDays.reduce((s,d)=>s+d.totals.calories,0)/loggedDays.length)
+    : 0;
+  // Scale bars against whichever is taller: the goal or the biggest day.
+  const peak = Math.max(goals.calories, ...days.map(d=>d.totals.calories), 1);
+  const goalPct = (goals.calories/peak)*100;
+
+  const dowOf = (date)=>{
+    const [y,m,d] = date.split('-').map(Number);
+    return new Date(y, m-1, d).toLocaleDateString(undefined,{weekday:'narrow'});
+  };
+  const bars = days.map(d=>{
+    const hit = dayHitsGoals(d.totals, goals);
+    const h = (d.totals.calories/peak)*100;
+    const color = !d.logged ? 'var(--line)' : (hit ? 'var(--good)' : 'var(--mustard)');
+    return `<div class="tcol"><div class="tbar-fill" style="height:${Math.max(h,2)}%;background:${color};"></div></div>`;
+  }).join('');
+  const labels = days.map(d=>
+    `<div class="tlabel${d.date===state.date?' tnow':''}">${dowOf(d.date)}</div>`
+  ).join('');
+
+  return `
+    <div class="card">
+      <div class="section-title">Last 7 days</div>
+      <div class="trend-bars">
+        <div class="tgoal" style="bottom:${goalPct}%;"><span>goal</span></div>
+        ${bars}
+      </div>
+      <div class="trend-labels">${labels}</div>
+      <div class="tstats">
+        <span>${streak>0 ? `&#128293; ${streak}-day streak` : 'No streak yet'}</span>
+        <span>avg ${avg} kcal</span>
       </div>
     </div>
   `;
@@ -387,6 +492,7 @@ function closeModal(){
   state.draftImageBase64 = null;
   state.draftImagePreview = null;
   state.draftEntry = null;
+  state.portion = 1;
   state.error = null;
   render();
 }
@@ -513,6 +619,14 @@ function addSheet(){
           <h2>${heading}</h2>
           <div class="sub">${sub}</div>
           ${state.draftImagePreview?`<img class="imgpreview" src="${state.draftImagePreview}"/>`:''}
+          ${state.addStep==='confirm'?`
+            <div class="portion">
+              <div class="portion-top">
+                <span class="plabel">Portion size</span>
+                <span class="pval" id="portionVal">${state.portion}&times;</span>
+              </div>
+              <input type="range" id="portionRange" min="0.25" max="3" step="0.25" value="${state.portion}"/>
+            </div>`:''}
           <label class="f">Food name</label>
           <input type="text" id="f-name" value="${escapeHtml(e.name)}" placeholder="e.g. Chicken salad"/>
           <label class="f">Calories (kcal)</label>
@@ -557,6 +671,20 @@ function wireAdd(host){
   }
   if(state.addStep==='manual' || state.addStep==='confirm'){
     host.querySelector('#logIt').onclick = ()=> commitEntry(host);
+  }
+  if(state.addStep==='confirm'){
+    const range = host.querySelector('#portionRange');
+    const base = state.draftEntry;
+    // Rescale the fields in place rather than re-rendering, so the slider keeps focus.
+    range.oninput = (ev)=>{
+      const mult = Number(ev.target.value)||1;
+      state.portion = mult;
+      host.querySelector('#portionVal').innerHTML = mult+'&times;';
+      NUTRITION_KEYS.forEach(k=>{
+        const el = host.querySelector('#f-'+k);
+        if(el) el.value = Math.round((Number(base[k])||0)*mult*10)/10;
+      });
+    };
   }
 }
 
@@ -617,6 +745,8 @@ All numeric fields are your best-effort estimate for the total visible/described
 
 function parseJsonResponse(text){
   let cleaned = text.trim();
+  // Reasoning models can still emit a <think> block; drop it before parsing.
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
   cleaned = cleaned.replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
   const start = cleaned.indexOf('{');
   const end = cleaned.lastIndexOf('}');
@@ -636,6 +766,8 @@ async function callVisionModel(content, errorReturnStep){
         model: MODEL,
         max_tokens: 1000,
         temperature: 0.2,
+        reasoning_effort: "none",
+        response_format: {type: "json_object"},
         messages:[{ role:"user", content }]
       })
     });

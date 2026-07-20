@@ -1,7 +1,7 @@
 {
-  "name": "daily-ledger",
+  "name": "nutrition-app",
   "version": "1.0.0",
-  "description": "Photo-based nutrition tracker",
+  "description": "Plate — photo-based nutrition and micronutrient tracker",
   "private": true,
   "devDependencies": {
     "@capacitor/cli": "^6.0.0"

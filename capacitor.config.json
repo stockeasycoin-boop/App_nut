@@ -1,6 +1,6 @@
 {
-  "appId": "com.stockeasy.dailyledger",
-  "appName": "The Daily Ledger",
+  "appId": "com.stockeasy.plate",
+  "appName": "Plate",
   "webDir": "www",
   "android": {
     "allowMixedContent": false
