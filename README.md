@@ -7,6 +7,15 @@ tracks everything against your daily goals. AI analysis runs on **Groq's free ti
 
 **Features**
 
+- **Login + profile onboarding.** A login screen (single button — no account,
+  no password, nothing leaves the device) followed by a one-step profile:
+  age, sex, height, weight, activity level and goal.
+- **Targets calculated from your body.** BMR via Mifflin-St Jeor → TDEE via
+  activity factor → adjusted for your goal (−500 kcal to lose, +400 to build).
+  Protein scales to bodyweight (1.6–2.0 g/kg), fat to 27% of energy, carbs fill
+  the remainder, fiber at 14g per 1000 kcal, sugar capped at 10% of energy per
+  WHO guidance. Targets preview live as you type and every one stays editable
+  in Settings.
 - **Log by photo, description, or manual entry.** Photos and text descriptions are
   sent to Groq's vision model, which returns a full nutrient breakdown.
 - **Portion slider.** Estimates come back for one portion — drag 0.25× to 3× and
@@ -66,8 +75,14 @@ for you, free:
 1. Get a free Groq API key: https://console.groq.com → API Keys → Create.
    No credit card needed. Free tier allows ~1,000 photo analyses per day —
    far more than any one person needs.
-2. In the app, tap the gear icon, paste the key, adjust daily goals, Save.
-3. Tap "Log food" → take a photo → review/adjust the estimate → Add to log.
+2. Open the app → **Log in** → fill in your profile. Targets are calculated
+   for you.
+3. Tap the gear icon, paste the Groq key, tweak any target, Save.
+4. Tap "Log food" → take a photo → set the portion → Add to log.
+
+The calculated targets are a starting point from population-level formulas, not
+a prescription. Adjust them in Settings to suit how you actually feel, and check
+with a doctor or dietitian before following an aggressive deficit.
 
 Manual entry works without any key.
 

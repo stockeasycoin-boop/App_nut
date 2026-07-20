@@ -104,6 +104,24 @@ body{padding-top:env(safe-area-inset-top);}
 .choice .d{font-size:11.5px;color:var(--muted);}
 .choice input[type=file]{display:none;}
 
+.login{display:flex;flex-direction:column;align-items:center;text-align:center;padding:56px 8px 0;min-height:70vh;}
+.login-mark{font-size:52px;line-height:1;margin-bottom:18px;}
+.login h1{font-family:var(--serif);font-size:40px;font-weight:600;margin:0;letter-spacing:-0.02em;}
+.login-tag{font-size:11.5px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.08em;margin-top:6px;}
+.login-copy{font-size:14px;color:var(--muted);line-height:1.6;max-width:320px;margin:26px 0 32px;}
+.login .primary-btn{max-width:300px;margin-top:0;}
+.login-note{font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:14px;}
+
+select{
+  width:100%;font-family:var(--sans);font-size:14px;padding:10px 11px;border:1px solid var(--line);
+  border-radius:9px;background:var(--card);color:var(--ink);appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%238a8574' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center;background-size:11px;padding-right:30px;
+}
+
+.prof-box{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 12px;}
+.prof-line{font-family:var(--mono);font-size:12px;color:var(--ink);}
+
 textarea, input[type=text], input[type=password], input[type=number]{
   width:100%;font-family:var(--sans);font-size:14px;padding:10px 11px;border:1px solid var(--line);
   border-radius:9px;background:var(--card);color:var(--ink);
@@ -162,6 +180,19 @@ const MICROS = [
 const NUTRITION_KEYS = ['calories','protein_g','carbs_g','fat_g','fiber_g','sugar_g','sodium_mg',
   'vitamin_c_mg','vitamin_a_mcg','calcium_mg','iron_mg','potassium_mg'];
 
+const ACTIVITY_LEVELS = [
+  {key:'sedentary', label:'Sedentary', desc:'Desk job, little exercise', factor:1.2},
+  {key:'light', label:'Lightly active', desc:'Light exercise 1-3 days/week', factor:1.375},
+  {key:'moderate', label:'Moderately active', desc:'Exercise 3-5 days/week', factor:1.55},
+  {key:'very', label:'Very active', desc:'Hard exercise 6-7 days/week', factor:1.725},
+  {key:'athlete', label:'Athlete', desc:'Training twice a day', factor:1.9},
+];
+const GOAL_TYPES = [
+  {key:'lose', label:'Lose weight', adjust:-500, proteinPerKg:2.0},
+  {key:'maintain', label:'Maintain', adjust:0, proteinPerKg:1.6},
+  {key:'gain', label:'Build muscle', adjust:400, proteinPerKg:1.8},
+];
+
 const DEFAULT_GOALS = {
   calories:2000, protein_g:50, carbs_g:275, fat_g:65, fiber_g:28,
   sugar_g:50, sodium_mg:2300,
@@ -183,6 +214,8 @@ function prettyDate(str){
 }
 
 let state = {
+  screen: 'login',
+  profile: null,
   date: todayStr(),
   goals: null,
   entries: [],
@@ -221,6 +254,51 @@ function saveEntries(date, entries){
   try{ localStorage.setItem('dl_entries_'+date, JSON.stringify(entries)); }
   catch(e){ console.error(e); }
 }
+function loadProfile(){
+  try{
+    const raw = localStorage.getItem('dl_profile');
+    state.profile = raw ? JSON.parse(raw) : null;
+  }catch(e){ state.profile = null; }
+}
+function saveProfile(p){
+  state.profile = p;
+  try{ localStorage.setItem('dl_profile', JSON.stringify(p)); }catch(e){}
+}
+
+// Mifflin-St Jeor BMR -> TDEE -> goal-adjusted targets.
+function computeTargets(p){
+  const kg = Number(p.weight_kg)||70;
+  const cm = Number(p.height_cm)||170;
+  const age = Number(p.age)||30;
+  let bmr = 10*kg + 6.25*cm - 5*age;
+  if(p.sex === 'male') bmr += 5;
+  else if(p.sex === 'female') bmr -= 161;
+  else bmr -= 78; // midpoint when unspecified
+
+  const act = ACTIVITY_LEVELS.find(a=>a.key===p.activity) || ACTIVITY_LEVELS[0];
+  const goalType = GOAL_TYPES.find(g=>g.key===p.goal) || GOAL_TYPES[1];
+  // Never prescribe below a conservative floor, even for aggressive deficits.
+  const floor = p.sex === 'female' ? 1200 : 1500;
+  const calories = Math.max(floor, Math.round((bmr*act.factor + goalType.adjust)/10)*10);
+
+  const protein_g = Math.round(kg * goalType.proteinPerKg);
+  const fat_g = Math.round((calories*0.27)/9);
+  const carbs_g = Math.max(0, Math.round((calories - protein_g*4 - fat_g*9)/4));
+  const fiber_g = Math.round(calories/1000*14);
+
+  return {
+    ...DEFAULT_GOALS,
+    calories, protein_g, carbs_g, fat_g, fiber_g,
+    sugar_g: Math.round(calories*0.10/4),   // WHO: under 10% of energy
+    sodium_mg: 2300,
+  };
+}
+function bmiOf(p){
+  const kg = Number(p.weight_kg), m = Number(p.height_cm)/100;
+  if(!kg || !m) return null;
+  return Math.round((kg/(m*m))*10)/10;
+}
+
 function getApiKey(){ return localStorage.getItem('dl_api_key') || ''; }
 function setApiKey(k){ localStorage.setItem('dl_api_key', k.trim()); }
 
@@ -280,9 +358,144 @@ function currentStreak(goals){
   return streak;
 }
 
+// ---------- login + profile screens ----------
+function renderLogin(root){
+  root.innerHTML = `
+    <div class="login">
+      <div class="login-mark">&#127869;</div>
+      <h1>Plate</h1>
+      <div class="login-tag">a running tally of what's on your plate</div>
+      <p class="login-copy">
+        Snap a photo of your meal and get calories, macros and micronutrients
+        estimated for you &mdash; then track them against goals built around your body.
+      </p>
+      <button class="primary-btn" id="loginBtn">Log in</button>
+      <div class="login-note">
+        No account needed. Everything stays on this device.
+      </div>
+    </div>
+  `;
+  document.getElementById('loginBtn').onclick = ()=>{
+    try{ localStorage.setItem('dl_signed_in','1'); }catch(e){}
+    state.screen = state.profile ? 'app' : 'profile';
+    render();
+  };
+}
+
+function profileField(p, key, label, unit, placeholder, attrs){
+  return `
+    <label class="f">${label}${unit?` (${unit})`:''}</label>
+    <input type="number" id="p-${key}" value="${p[key]!=null?p[key]:''}" placeholder="${placeholder||''}" ${attrs||''}/>
+  `;
+}
+
+function renderProfile(root, isEdit){
+  const p = state.profile || {sex:'', activity:'sedentary', goal:'maintain'};
+  root.innerHTML = `
+    <div class="brand"><h1>${isEdit?'Your profile':'About you'}</h1></div>
+    <div class="tagline">${isEdit?'update anytime':'step 1 of 1'}</div>
+
+    <div class="card">
+      <div class="sub" style="margin-bottom:4px;">
+        We use these to work out your daily calorie and macro targets. You can
+        override any target afterwards in Settings.
+      </div>
+
+      <label class="f">Name (optional)</label>
+      <input type="text" id="p-name" value="${escapeHtml(p.name||'')}" placeholder="What should we call you?"/>
+
+      <div class="grid2">
+        <div>${profileField(p,'age','Age','years','30',' min="13" max="120"')}</div>
+        <div>
+          <label class="f">Sex</label>
+          <select id="p-sex">
+            <option value=""${!p.sex?' selected':''}>Prefer not to say</option>
+            <option value="female"${p.sex==='female'?' selected':''}>Female</option>
+            <option value="male"${p.sex==='male'?' selected':''}>Male</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>${profileField(p,'height_cm','Height','cm','170',' min="90" max="250"')}</div>
+        <div>${profileField(p,'weight_kg','Weight','kg','70',' min="25" max="300" step="0.1"')}</div>
+      </div>
+
+      <label class="f">Activity level</label>
+      <select id="p-activity">
+        ${ACTIVITY_LEVELS.map(a=>`<option value="${a.key}"${p.activity===a.key?' selected':''}>${a.label} &mdash; ${a.desc}</option>`).join('')}
+      </select>
+
+      <label class="f">Goal</label>
+      <select id="p-goal">
+        ${GOAL_TYPES.map(g=>`<option value="${g.key}"${p.goal===g.key?' selected':''}>${g.label}</option>`).join('')}
+      </select>
+
+      <div id="targetPreview"></div>
+      ${state.error?`<div class="err-box">${state.error}</div>`:''}
+      <button class="primary-btn" id="saveProfile">${isEdit?'Save &amp; recalculate targets':'Calculate my targets'}</button>
+      ${isEdit?'<button class="ghost-btn" id="cancelProfile">Cancel</button>':''}
+    </div>
+  `;
+
+  const read = ()=>({
+    name: document.getElementById('p-name').value.trim(),
+    age: Number(document.getElementById('p-age').value)||null,
+    sex: document.getElementById('p-sex').value,
+    height_cm: Number(document.getElementById('p-height_cm').value)||null,
+    weight_kg: Number(document.getElementById('p-weight_kg').value)||null,
+    activity: document.getElementById('p-activity').value,
+    goal: document.getElementById('p-goal').value,
+  });
+
+  const preview = ()=>{
+    const d = read();
+    const box = document.getElementById('targetPreview');
+    if(!d.age || !d.height_cm || !d.weight_kg){ box.innerHTML = ''; return; }
+    const t = computeTargets(d);
+    const bmi = bmiOf(d);
+    box.innerHTML = `
+      <div class="note-box" style="margin-top:16px;">
+        <strong>${t.calories} kcal/day</strong> &middot; ${t.protein_g}g protein &middot;
+        ${t.carbs_g}g carbs &middot; ${t.fat_g}g fat &middot; ${t.fiber_g}g fiber
+        ${bmi?`<br/><span style="opacity:0.8;">BMI ${bmi}</span>`:''}
+      </div>`;
+  };
+
+  ['p-age','p-sex','p-height_cm','p-weight_kg','p-activity','p-goal'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.oninput = preview; el.onchange = preview;
+  });
+  preview();
+
+  document.getElementById('saveProfile').onclick = ()=>{
+    const d = read();
+    if(!d.age || !d.height_cm || !d.weight_kg){
+      state.error = 'Age, height and weight are needed to calculate your targets.';
+      render();
+      return;
+    }
+    saveProfile(d);
+    saveGoals(computeTargets(d));
+    state.error = null;
+    state.screen = 'app';
+    render();
+  };
+  const cancel = document.getElementById('cancelProfile');
+  if(cancel) cancel.onclick = ()=>{ state.error=null; state.screen='app'; render(); };
+}
+
 // ---------- rendering ----------
 function render(){
   const root = document.getElementById('root');
+  if(state.screen !== 'app'){
+    // Leaving the app screen: tear down any open sheet, or it stays stuck on top.
+    state.modal = null;
+    const stale = document.getElementById('modalHost');
+    if(stale) stale.remove();
+  }
+  if(state.screen === 'login'){ renderLogin(root); return; }
+  if(state.screen === 'profile'){ renderProfile(root, !!state.profile); return; }
   const totals = computeTotals(state.entries);
   const goals = state.goals || DEFAULT_GOALS;
 
@@ -511,7 +724,21 @@ function settingsSheet(){
       <div class="sheet-inner">
         <button class="close-x" id="closeSettings">&times;</button>
         <h2>Settings</h2>
-        <div class="sub">Your API key and daily targets. Everything stays on this device.</div>
+        <div class="sub">Your profile, API key and daily targets. Everything stays on this device.</div>
+
+        <label class="f">Profile</label>
+        <div class="prof-box">
+          <div class="prof-line">
+            ${state.profile ? `
+              ${state.profile.name?escapeHtml(state.profile.name)+' &middot; ':''}
+              ${state.profile.age}y &middot; ${state.profile.height_cm}cm &middot; ${state.profile.weight_kg}kg
+              ${bmiOf(state.profile)?` &middot; BMI ${bmiOf(state.profile)}`:''}
+            ` : 'Not set up yet'}
+          </div>
+          <button class="ghost-btn" id="editProfile" style="margin:0;text-align:left;padding:6px 0;">
+            ${state.profile?'Edit profile &amp; recalculate targets':'Set up profile'} &rarr;
+          </button>
+        </div>
 
         <label class="f">Groq API key (free &mdash; powers photo &amp; text analysis)</label>
         <input type="password" id="apiKeyInput" value="${escapeHtml(key)}" placeholder="gsk_..."/>
@@ -527,6 +754,7 @@ function settingsSheet(){
         ${rows(MICROS)}
         ${state.settingsSaved?'<div class="note-box">Saved.</div>':''}
         <button class="primary-btn" id="saveGoals">Save settings</button>
+        <button class="ghost-btn" id="signOut">Log out</button>
       </div>
     </div>
   `;
@@ -534,6 +762,17 @@ function settingsSheet(){
 
 function wireSettings(host){
   host.querySelector('#closeSettings').onclick = closeModal;
+  host.querySelector('#editProfile').onclick = ()=>{
+    state.modal = null;
+    state.screen = 'profile';
+    render();
+  };
+  host.querySelector('#signOut').onclick = ()=>{
+    try{ localStorage.removeItem('dl_signed_in'); }catch(e){}
+    state.modal = null;
+    state.screen = 'login';
+    render();
+  };
   host.querySelector('#saveGoals').onclick = ()=>{
     setApiKey(host.querySelector('#apiKeyInput').value);
     const g = {};
@@ -840,7 +1079,11 @@ function commitEntry(host){
 
 // ---------- init ----------
 loadGoals();
+loadProfile();
 loadEntries(state.date);
+// Returning users land straight in the app; the login screen is the first-run gate.
+state.screen = localStorage.getItem('dl_signed_in') ? 'app' : 'login';
+if(state.screen === 'app' && !state.profile) state.screen = 'profile';
 render();
 
 })();
