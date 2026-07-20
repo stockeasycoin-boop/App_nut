@@ -1,0 +1,8 @@
+{
+  "appId": "com.stockeasy.dailyledger",
+  "appName": "The Daily Ledger",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

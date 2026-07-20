@@ -1,0 +1,12 @@
+node_modules/
+android/
+ios/
+dist/
+build/
+*.log
+.DS_Store
+.env
+.env.local
+*.keystore
+*.apk
+*.aab
