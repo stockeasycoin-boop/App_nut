@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { TODAY_MEALS, type Meal } from '../data/mock'
 import { DEFAULT_GOALS, type NutrientKey, type Nutrients } from '../data/nutrients'
 import { dayTotal } from '../lib/nutrition'
+import { API_ENABLED, deleteMeal, fetchDay, saveWater } from '../lib/api'
 
 export type Tab = 'today' | 'insights' | 'nutrients' | 'profile'
 export type Theme = 'system' | 'light' | 'dark'
@@ -33,6 +34,7 @@ interface AppState {
   setGoal: (k: NutrientKey, v: number) => void
   setGoals: (g: Partial<Record<NutrientKey, number>>) => void
   addMeal: (m: Meal) => void
+  replaceMeal: (id: string, m: Meal) => void
   removeMeal: (id: string) => void
   water: number
   setWater: (n: number) => void
@@ -53,9 +55,9 @@ const Ctx = createContext<AppState | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<Tab>('today')
-  const [meals, setMeals] = useState<Meal[]>(TODAY_MEALS)
+  const [meals, setMeals] = useState<Meal[]>(API_ENABLED ? [] : TODAY_MEALS)
   const [goals, setGoalsState] = useState(DEFAULT_GOALS)
-  const [water, setWater] = useState(5)
+  const [water, setWaterState] = useState(API_ENABLED ? 0 : 5)
   const [scanOpen, setScanOpen] = useState(false)
   const [openMeal, setOpenMeal] = useState<Meal | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
@@ -82,6 +84,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToast((cur) => (cur?.id === id ? null : cur)), 3200)
   }, [])
 
+  useEffect(() => {
+    fetchDay()
+      .then((day) => {
+        if (!day) return
+        setMeals(day.meals)
+        setGoalsState((g) => ({ ...g, ...day.goals }))
+        setWaterState(day.water)
+      })
+      .catch((e: Error) => showToast({ emoji: '⚠️', title: 'Couldn’t load today', body: e.message }))
+  }, [showToast])
+
+  const setWater = (n: number) => {
+    setWaterState(n)
+    saveWater(n).catch((e: Error) => showToast({ emoji: '⚠️', title: 'Water not saved', body: e.message }))
+  }
+
+  const removeMeal = (id: string) => {
+    const before = meals
+    setMeals((list) => list.filter((m) => m.id !== id))
+    if (id.startsWith('draft-')) return // never reached the server
+    deleteMeal(id).catch((e: Error) => {
+      setMeals(before)
+      showToast({ emoji: '⚠️', title: 'Couldn’t delete meal', body: e.message })
+    })
+  }
+
   const value: AppState = {
     tab,
     setTab,
@@ -91,7 +119,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setGoal: (k, v) => setGoalsState((g) => ({ ...g, [k]: v })),
     setGoals: (patch) => setGoalsState((g) => ({ ...g, ...patch })),
     addMeal: (m) => setMeals((list) => [...list, m]),
-    removeMeal: (id) => setMeals((list) => list.filter((m) => m.id !== id)),
+    replaceMeal: (id, m) => setMeals((list) => list.map((x) => (x.id === id ? m : x))),
+    removeMeal,
     water,
     setWater,
     scanOpen,

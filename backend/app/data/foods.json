@@ -1,0 +1,1447 @@
+{
+ "_source": "Approximate per-100 g values from USDA FoodData Central (SR Legacy / Foundation) and, for Indian dishes, IFCT 2017 and typical home recipes. Replace with a full import for production.",
+ "foods": [
+  {
+   "id": "avocado",
+   "name": "Avocado",
+   "emoji": "🥑",
+   "serving_g": 100,
+   "aliases": [
+    "avocado slices",
+    "guacamole",
+    "smashed avocado"
+   ],
+   "per100g": {
+    "calories": 160,
+    "protein": 2,
+    "carbs": 8.5,
+    "fat": 14.7,
+    "fiber": 6.7,
+    "sugar": 0.7,
+    "satFat": 2.1,
+    "vitA": 7,
+    "vitC": 10,
+    "vitE": 2.1,
+    "vitK": 21,
+    "b1": 0.07,
+    "b2": 0.13,
+    "b3": 1.7,
+    "b6": 0.26,
+    "folate": 81,
+    "calcium": 12,
+    "iron": 0.55,
+    "magnesium": 29,
+    "potassium": 485,
+    "zinc": 0.64,
+    "sodium": 7,
+    "phosphorus": 52,
+    "selenium": 0.4
+   }
+  },
+  {
+   "id": "chickpeas",
+   "name": "Chickpeas (cooked)",
+   "emoji": "🫘",
+   "serving_g": 80,
+   "aliases": [
+    "garbanzo beans",
+    "chana",
+    "roasted chickpeas"
+   ],
+   "per100g": {
+    "calories": 164,
+    "protein": 8.9,
+    "carbs": 27.4,
+    "fat": 2.6,
+    "fiber": 7.6,
+    "sugar": 4.8,
+    "satFat": 0.27,
+    "vitA": 1,
+    "vitC": 1.3,
+    "vitE": 0.35,
+    "vitK": 4,
+    "b1": 0.12,
+    "b2": 0.06,
+    "b3": 0.53,
+    "b6": 0.14,
+    "folate": 172,
+    "calcium": 49,
+    "iron": 2.9,
+    "magnesium": 48,
+    "potassium": 291,
+    "zinc": 1.5,
+    "sodium": 7,
+    "phosphorus": 168,
+    "selenium": 3.7
+   }
+  },
+  {
+   "id": "sweet-potato",
+   "name": "Sweet potato (roasted)",
+   "emoji": "🍠",
+   "serving_g": 120,
+   "aliases": [
+    "sweet potato",
+    "yam",
+    "shakarkandi"
+   ],
+   "per100g": {
+    "calories": 90,
+    "protein": 2,
+    "carbs": 20.7,
+    "fat": 0.15,
+    "fiber": 3.3,
+    "sugar": 6.5,
+    "vitA": 961,
+    "vitC": 19.6,
+    "vitE": 0.71,
+    "vitK": 2.3,
+    "b1": 0.11,
+    "b2": 0.11,
+    "b3": 1.5,
+    "b6": 0.29,
+    "folate": 6,
+    "calcium": 38,
+    "iron": 0.69,
+    "magnesium": 27,
+    "potassium": 475,
+    "zinc": 0.32,
+    "sodium": 36,
+    "phosphorus": 54,
+    "selenium": 0.2
+   }
+  },
+  {
+   "id": "tomato",
+   "name": "Tomatoes",
+   "emoji": "🍅",
+   "serving_g": 90,
+   "aliases": [
+    "cherry tomatoes",
+    "tomato"
+   ],
+   "per100g": {
+    "calories": 18,
+    "protein": 0.9,
+    "carbs": 3.9,
+    "fat": 0.2,
+    "fiber": 1.2,
+    "sugar": 2.6,
+    "vitA": 42,
+    "vitC": 13.7,
+    "vitE": 0.54,
+    "vitK": 7.9,
+    "b6": 0.08,
+    "folate": 15,
+    "calcium": 10,
+    "iron": 0.27,
+    "magnesium": 11,
+    "potassium": 237,
+    "zinc": 0.17,
+    "sodium": 5,
+    "phosphorus": 24
+   }
+  },
+  {
+   "id": "tahini",
+   "name": "Tahini",
+   "emoji": "🥄",
+   "serving_g": 15,
+   "aliases": [
+    "tahini dressing",
+    "sesame paste"
+   ],
+   "per100g": {
+    "calories": 595,
+    "protein": 17,
+    "carbs": 21,
+    "fat": 54,
+    "fiber": 9.3,
+    "satFat": 7.5,
+    "vitE": 0.25,
+    "b1": 1.2,
+    "b2": 0.47,
+    "b3": 5.5,
+    "b6": 0.15,
+    "folate": 98,
+    "calcium": 426,
+    "iron": 8.95,
+    "magnesium": 353,
+    "potassium": 414,
+    "zinc": 4.6,
+    "sodium": 115,
+    "phosphorus": 732,
+    "selenium": 34
+   }
+  },
+  {
+   "id": "red-cabbage",
+   "name": "Red cabbage",
+   "emoji": "🥬",
+   "serving_g": 50,
+   "aliases": [
+    "purple cabbage",
+    "cabbage"
+   ],
+   "per100g": {
+    "calories": 31,
+    "protein": 1.4,
+    "carbs": 7.4,
+    "fat": 0.16,
+    "fiber": 2.1,
+    "sugar": 3.8,
+    "vitA": 56,
+    "vitC": 57,
+    "vitK": 38,
+    "b6": 0.21,
+    "folate": 18,
+    "calcium": 45,
+    "iron": 0.8,
+    "magnesium": 16,
+    "potassium": 243,
+    "zinc": 0.22,
+    "sodium": 27,
+    "phosphorus": 30
+   }
+  },
+  {
+   "id": "bell-pepper",
+   "name": "Bell pepper",
+   "emoji": "🫑",
+   "serving_g": 60,
+   "aliases": [
+    "capsicum",
+    "yellow pepper",
+    "red pepper"
+   ],
+   "per100g": {
+    "calories": 27,
+    "protein": 1,
+    "carbs": 6.3,
+    "fat": 0.2,
+    "fiber": 0.9,
+    "sugar": 4.2,
+    "vitA": 10,
+    "vitC": 184,
+    "b6": 0.17,
+    "folate": 26,
+    "calcium": 11,
+    "iron": 0.46,
+    "magnesium": 12,
+    "potassium": 212,
+    "zinc": 0.17,
+    "sodium": 2,
+    "phosphorus": 24
+   }
+  },
+  {
+   "id": "lettuce",
+   "name": "Lettuce & greens",
+   "emoji": "🥗",
+   "serving_g": 50,
+   "aliases": [
+    "romaine",
+    "mixed greens",
+    "microgreens",
+    "salad leaves"
+   ],
+   "per100g": {
+    "calories": 17,
+    "protein": 1.2,
+    "carbs": 3.3,
+    "fat": 0.3,
+    "fiber": 2.1,
+    "sugar": 1.2,
+    "vitA": 436,
+    "vitC": 4,
+    "vitK": 103,
+    "b6": 0.07,
+    "folate": 136,
+    "calcium": 33,
+    "iron": 0.97,
+    "magnesium": 14,
+    "potassium": 247,
+    "zinc": 0.23,
+    "sodium": 8,
+    "phosphorus": 30
+   }
+  },
+  {
+   "id": "spinach",
+   "name": "Spinach",
+   "emoji": "🥬",
+   "serving_g": 60,
+   "aliases": [
+    "palak",
+    "baby spinach"
+   ],
+   "per100g": {
+    "calories": 23,
+    "protein": 2.9,
+    "carbs": 3.6,
+    "fat": 0.4,
+    "fiber": 2.2,
+    "vitA": 469,
+    "vitC": 28,
+    "vitE": 2,
+    "vitK": 483,
+    "b2": 0.19,
+    "b6": 0.2,
+    "folate": 194,
+    "calcium": 99,
+    "iron": 2.7,
+    "magnesium": 79,
+    "potassium": 558,
+    "zinc": 0.53,
+    "sodium": 79,
+    "phosphorus": 49
+   }
+  },
+  {
+   "id": "broccoli",
+   "name": "Broccoli",
+   "emoji": "🥦",
+   "serving_g": 80,
+   "aliases": [],
+   "per100g": {
+    "calories": 34,
+    "protein": 2.8,
+    "carbs": 6.6,
+    "fat": 0.4,
+    "fiber": 2.6,
+    "sugar": 1.7,
+    "vitA": 31,
+    "vitC": 89,
+    "vitE": 0.78,
+    "vitK": 102,
+    "b6": 0.18,
+    "folate": 63,
+    "calcium": 47,
+    "iron": 0.73,
+    "magnesium": 21,
+    "potassium": 316,
+    "zinc": 0.41,
+    "sodium": 33,
+    "phosphorus": 66
+   }
+  },
+  {
+   "id": "carrot",
+   "name": "Carrot",
+   "emoji": "🥕",
+   "serving_g": 60,
+   "aliases": [
+    "carrots"
+   ],
+   "per100g": {
+    "calories": 41,
+    "protein": 0.9,
+    "carbs": 9.6,
+    "fat": 0.2,
+    "fiber": 2.8,
+    "sugar": 4.7,
+    "vitA": 835,
+    "vitC": 5.9,
+    "vitK": 13.2,
+    "b6": 0.14,
+    "folate": 19,
+    "calcium": 33,
+    "iron": 0.3,
+    "magnesium": 12,
+    "potassium": 320,
+    "sodium": 69,
+    "phosphorus": 35
+   }
+  },
+  {
+   "id": "cucumber",
+   "name": "Cucumber",
+   "emoji": "🥒",
+   "serving_g": 60,
+   "aliases": [],
+   "per100g": {
+    "calories": 15,
+    "protein": 0.65,
+    "carbs": 3.6,
+    "fiber": 0.5,
+    "sugar": 1.7,
+    "vitC": 2.8,
+    "vitK": 16.4,
+    "calcium": 16,
+    "magnesium": 13,
+    "potassium": 147,
+    "sodium": 2,
+    "phosphorus": 24
+   }
+  },
+  {
+   "id": "potato",
+   "name": "Potato (boiled)",
+   "emoji": "🥔",
+   "serving_g": 150,
+   "aliases": [
+    "aloo",
+    "potatoes"
+   ],
+   "per100g": {
+    "calories": 87,
+    "protein": 1.9,
+    "carbs": 20,
+    "fat": 0.1,
+    "fiber": 1.8,
+    "vitC": 13,
+    "b6": 0.3,
+    "calcium": 5,
+    "iron": 0.3,
+    "magnesium": 22,
+    "potassium": 379,
+    "sodium": 4,
+    "phosphorus": 44
+   }
+  },
+  {
+   "id": "sourdough",
+   "name": "Sourdough bread",
+   "emoji": "🍞",
+   "serving_g": 60,
+   "aliases": [
+    "toast",
+    "bread",
+    "white bread"
+   ],
+   "per100g": {
+    "calories": 272,
+    "protein": 10.8,
+    "carbs": 51.9,
+    "fat": 2.4,
+    "fiber": 2.2,
+    "sugar": 4.3,
+    "satFat": 0.5,
+    "b1": 0.5,
+    "b2": 0.3,
+    "b3": 4.8,
+    "b6": 0.05,
+    "folate": 110,
+    "calcium": 52,
+    "iron": 3.6,
+    "magnesium": 26,
+    "potassium": 117,
+    "zinc": 0.9,
+    "sodium": 604,
+    "phosphorus": 100,
+    "selenium": 28
+   }
+  },
+  {
+   "id": "roti",
+   "name": "Roti / chapati",
+   "emoji": "🫓",
+   "serving_g": 40,
+   "aliases": [
+    "chapati",
+    "phulka",
+    "paratha"
+   ],
+   "per100g": {
+    "calories": 297,
+    "protein": 9.8,
+    "carbs": 46.4,
+    "fat": 8.5,
+    "fiber": 4.9,
+    "b1": 0.3,
+    "b3": 4,
+    "folate": 30,
+    "calcium": 30,
+    "iron": 3,
+    "magnesium": 70,
+    "potassium": 200,
+    "zinc": 1.7,
+    "sodium": 400,
+    "phosphorus": 190,
+    "selenium": 20
+   }
+  },
+  {
+   "id": "white-rice",
+   "name": "White rice (cooked)",
+   "emoji": "🍚",
+   "serving_g": 150,
+   "aliases": [
+    "rice",
+    "steamed rice",
+    "basmati rice",
+    "sushi rice",
+    "jeera rice"
+   ],
+   "per100g": {
+    "calories": 130,
+    "protein": 2.7,
+    "carbs": 28.2,
+    "fat": 0.3,
+    "fiber": 0.4,
+    "b1": 0.02,
+    "b3": 0.4,
+    "b6": 0.09,
+    "folate": 3,
+    "calcium": 10,
+    "iron": 0.2,
+    "magnesium": 12,
+    "potassium": 35,
+    "zinc": 0.49,
+    "sodium": 1,
+    "phosphorus": 43,
+    "selenium": 7.5
+   }
+  },
+  {
+   "id": "brown-rice",
+   "name": "Brown rice (cooked)",
+   "emoji": "🍚",
+   "serving_g": 150,
+   "aliases": [],
+   "per100g": {
+    "calories": 123,
+    "protein": 2.7,
+    "carbs": 25.6,
+    "fat": 1,
+    "fiber": 1.6,
+    "b1": 0.18,
+    "b3": 2.6,
+    "b6": 0.12,
+    "folate": 9,
+    "calcium": 3,
+    "iron": 0.56,
+    "magnesium": 39,
+    "potassium": 86,
+    "zinc": 0.71,
+    "sodium": 4,
+    "phosphorus": 103,
+    "selenium": 5.8
+   }
+  },
+  {
+   "id": "quinoa",
+   "name": "Quinoa (cooked)",
+   "emoji": "🌾",
+   "serving_g": 150,
+   "aliases": [],
+   "per100g": {
+    "calories": 120,
+    "protein": 4.4,
+    "carbs": 21.3,
+    "fat": 1.9,
+    "fiber": 2.8,
+    "vitE": 0.63,
+    "b1": 0.1,
+    "b6": 0.12,
+    "folate": 42,
+    "calcium": 17,
+    "iron": 1.5,
+    "magnesium": 64,
+    "potassium": 172,
+    "zinc": 1.1,
+    "sodium": 7,
+    "phosphorus": 152,
+    "selenium": 2.8
+   }
+  },
+  {
+   "id": "oats",
+   "name": "Oatmeal (cooked)",
+   "emoji": "🥣",
+   "serving_g": 200,
+   "aliases": [
+    "porridge",
+    "oats"
+   ],
+   "per100g": {
+    "calories": 71,
+    "protein": 2.5,
+    "carbs": 12,
+    "fat": 1.5,
+    "fiber": 1.7,
+    "b1": 0.08,
+    "iron": 0.9,
+    "magnesium": 27,
+    "potassium": 70,
+    "zinc": 0.6,
+    "sodium": 49,
+    "phosphorus": 77,
+    "selenium": 5.4
+   }
+  },
+  {
+   "id": "granola",
+   "name": "Granola",
+   "emoji": "🥣",
+   "serving_g": 30,
+   "aliases": [
+    "muesli"
+   ],
+   "per100g": {
+    "calories": 471,
+    "protein": 10,
+    "carbs": 64,
+    "fat": 20,
+    "fiber": 7,
+    "sugar": 20,
+    "satFat": 3.7,
+    "vitE": 5,
+    "b1": 0.5,
+    "folate": 50,
+    "calcium": 60,
+    "iron": 3.5,
+    "magnesium": 120,
+    "potassium": 400,
+    "zinc": 2.6,
+    "sodium": 26,
+    "phosphorus": 320,
+    "selenium": 17
+   }
+  },
+  {
+   "id": "poha",
+   "name": "Poha",
+   "emoji": "🍛",
+   "serving_g": 150,
+   "aliases": [
+    "flattened rice",
+    "aval"
+   ],
+   "per100g": {
+    "calories": 130,
+    "protein": 2.5,
+    "carbs": 23,
+    "fat": 3.5,
+    "fiber": 1,
+    "iron": 2.7,
+    "sodium": 250,
+    "potassium": 80,
+    "magnesium": 20
+   }
+  },
+  {
+   "id": "idli",
+   "name": "Idli",
+   "emoji": "🍘",
+   "serving_g": 100,
+   "aliases": [
+    "idly"
+   ],
+   "per100g": {
+    "calories": 130,
+    "protein": 4,
+    "carbs": 27,
+    "fat": 0.4,
+    "fiber": 1.2,
+    "iron": 0.6,
+    "calcium": 10,
+    "magnesium": 15,
+    "potassium": 70,
+    "sodium": 250
+   }
+  },
+  {
+   "id": "dosa",
+   "name": "Dosa",
+   "emoji": "🫓",
+   "serving_g": 100,
+   "aliases": [
+    "plain dosa",
+    "masala dosa"
+   ],
+   "per100g": {
+    "calories": 168,
+    "protein": 3.9,
+    "carbs": 29,
+    "fat": 3.7,
+    "fiber": 0.9,
+    "iron": 0.8,
+    "sodium": 290,
+    "potassium": 90,
+    "calcium": 15
+   }
+  },
+  {
+   "id": "egg-fried",
+   "name": "Fried egg",
+   "emoji": "🍳",
+   "serving_g": 50,
+   "aliases": [
+    "egg",
+    "sunny side up",
+    "omelette"
+   ],
+   "per100g": {
+    "calories": 196,
+    "protein": 13.6,
+    "carbs": 0.8,
+    "fat": 14.8,
+    "satFat": 4.3,
+    "cholesterol": 401,
+    "vitA": 216,
+    "vitD": 2.2,
+    "vitE": 1.3,
+    "vitK": 5.6,
+    "b1": 0.04,
+    "b2": 0.5,
+    "b6": 0.17,
+    "b12": 0.9,
+    "folate": 46,
+    "calcium": 62,
+    "iron": 1.9,
+    "magnesium": 13,
+    "potassium": 152,
+    "zinc": 1.2,
+    "sodium": 207,
+    "phosphorus": 215,
+    "selenium": 34
+   }
+  },
+  {
+   "id": "egg-boiled",
+   "name": "Boiled egg",
+   "emoji": "🥚",
+   "serving_g": 50,
+   "aliases": [
+    "hard boiled egg",
+    "soft boiled egg"
+   ],
+   "per100g": {
+    "calories": 155,
+    "protein": 12.6,
+    "carbs": 1.1,
+    "fat": 10.6,
+    "satFat": 3.3,
+    "cholesterol": 373,
+    "vitA": 149,
+    "vitD": 2.2,
+    "vitE": 1,
+    "b1": 0.07,
+    "b2": 0.51,
+    "b6": 0.12,
+    "b12": 1.1,
+    "folate": 44,
+    "calcium": 50,
+    "iron": 1.2,
+    "magnesium": 10,
+    "potassium": 126,
+    "zinc": 1.05,
+    "sodium": 124,
+    "phosphorus": 172,
+    "selenium": 30.8
+   }
+  },
+  {
+   "id": "salmon",
+   "name": "Salmon (cooked)",
+   "emoji": "🐟",
+   "serving_g": 120,
+   "aliases": [
+    "grilled salmon",
+    "salmon fillet",
+    "smoked salmon"
+   ],
+   "per100g": {
+    "calories": 206,
+    "protein": 22,
+    "fat": 12.4,
+    "satFat": 2.5,
+    "omega3": 2.3,
+    "cholesterol": 63,
+    "vitA": 15,
+    "vitD": 13.1,
+    "b1": 0.34,
+    "b2": 0.14,
+    "b3": 8,
+    "b6": 0.65,
+    "b12": 2.8,
+    "folate": 34,
+    "calcium": 15,
+    "iron": 0.34,
+    "magnesium": 30,
+    "potassium": 384,
+    "zinc": 0.43,
+    "sodium": 61,
+    "phosphorus": 252,
+    "selenium": 41
+   }
+  },
+  {
+   "id": "chicken-breast",
+   "name": "Chicken breast (cooked)",
+   "emoji": "🍗",
+   "serving_g": 120,
+   "aliases": [
+    "grilled chicken",
+    "chicken"
+   ],
+   "per100g": {
+    "calories": 165,
+    "protein": 31,
+    "fat": 3.6,
+    "satFat": 1,
+    "cholesterol": 85,
+    "vitA": 6,
+    "b2": 0.11,
+    "b3": 13.7,
+    "b6": 0.6,
+    "b12": 0.34,
+    "calcium": 15,
+    "iron": 1,
+    "magnesium": 29,
+    "potassium": 256,
+    "zinc": 1,
+    "sodium": 74,
+    "phosphorus": 228,
+    "selenium": 27.6
+   }
+  },
+  {
+   "id": "tandoori-chicken",
+   "name": "Tandoori chicken",
+   "emoji": "🍗",
+   "serving_g": 150,
+   "aliases": [
+    "chicken tikka"
+   ],
+   "per100g": {
+    "calories": 150,
+    "protein": 22,
+    "carbs": 3,
+    "fat": 5.5,
+    "satFat": 1.6,
+    "cholesterol": 90,
+    "vitA": 30,
+    "vitC": 2,
+    "b3": 9,
+    "b6": 0.45,
+    "b12": 0.3,
+    "calcium": 30,
+    "iron": 1.2,
+    "magnesium": 25,
+    "potassium": 280,
+    "zinc": 1.6,
+    "sodium": 520,
+    "phosphorus": 200,
+    "selenium": 22
+   }
+  },
+  {
+   "id": "butter-chicken",
+   "name": "Butter chicken",
+   "emoji": "🍛",
+   "serving_g": 200,
+   "aliases": [
+    "murgh makhani",
+    "chicken curry"
+   ],
+   "per100g": {
+    "calories": 150,
+    "protein": 13,
+    "carbs": 5,
+    "fat": 8.5,
+    "satFat": 4,
+    "cholesterol": 60,
+    "b3": 4,
+    "iron": 0.9,
+    "potassium": 230,
+    "sodium": 400,
+    "selenium": 14
+   }
+  },
+  {
+   "id": "chicken-biryani",
+   "name": "Chicken biryani",
+   "emoji": "🍛",
+   "serving_g": 300,
+   "aliases": [
+    "biryani",
+    "dum biryani"
+   ],
+   "per100g": {
+    "calories": 180,
+    "protein": 9,
+    "carbs": 22,
+    "fat": 6,
+    "fiber": 1,
+    "satFat": 1.8,
+    "cholesterol": 30,
+    "vitA": 20,
+    "b3": 3,
+    "calcium": 20,
+    "iron": 1,
+    "magnesium": 20,
+    "potassium": 200,
+    "zinc": 0.8,
+    "sodium": 450,
+    "phosphorus": 100,
+    "selenium": 10
+   }
+  },
+  {
+   "id": "paneer",
+   "name": "Paneer",
+   "emoji": "🧀",
+   "serving_g": 80,
+   "aliases": [
+    "cottage cheese",
+    "paneer tikka"
+   ],
+   "per100g": {
+    "calories": 265,
+    "protein": 18.3,
+    "carbs": 1.2,
+    "fat": 20.8,
+    "satFat": 13,
+    "cholesterol": 60,
+    "vitA": 170,
+    "b2": 0.2,
+    "b12": 0.8,
+    "calcium": 480,
+    "iron": 0.3,
+    "magnesium": 23,
+    "potassium": 100,
+    "zinc": 2.7,
+    "sodium": 22,
+    "phosphorus": 330,
+    "selenium": 9
+   }
+  },
+  {
+   "id": "paneer-curry",
+   "name": "Paneer curry",
+   "emoji": "🍛",
+   "serving_g": 200,
+   "aliases": [
+    "paneer butter masala",
+    "shahi paneer",
+    "kadai paneer"
+   ],
+   "per100g": {
+    "calories": 200,
+    "protein": 8,
+    "carbs": 8,
+    "fat": 15,
+    "satFat": 8,
+    "vitA": 120,
+    "calcium": 200,
+    "iron": 0.8,
+    "potassium": 200,
+    "sodium": 420
+   }
+  },
+  {
+   "id": "palak-paneer",
+   "name": "Palak paneer",
+   "emoji": "🥬",
+   "serving_g": 200,
+   "aliases": [
+    "saag paneer"
+   ],
+   "per100g": {
+    "calories": 140,
+    "protein": 7,
+    "carbs": 6,
+    "fat": 10,
+    "fiber": 2,
+    "satFat": 5,
+    "vitA": 300,
+    "vitC": 10,
+    "vitK": 200,
+    "folate": 80,
+    "calcium": 210,
+    "iron": 2,
+    "magnesium": 45,
+    "potassium": 320,
+    "sodium": 350
+   }
+  },
+  {
+   "id": "dal",
+   "name": "Dal",
+   "emoji": "🍲",
+   "serving_g": 200,
+   "aliases": [
+    "dal tadka",
+    "toor dal",
+    "moong dal",
+    "masoor dal",
+    "lentil curry",
+    "sambar"
+   ],
+   "per100g": {
+    "calories": 120,
+    "protein": 6.5,
+    "carbs": 16,
+    "fat": 3.5,
+    "fiber": 4.5,
+    "folate": 100,
+    "calcium": 25,
+    "iron": 2,
+    "magnesium": 30,
+    "potassium": 280,
+    "zinc": 1,
+    "sodium": 300,
+    "phosphorus": 120
+   }
+  },
+  {
+   "id": "rajma",
+   "name": "Rajma",
+   "emoji": "🫘",
+   "serving_g": 200,
+   "aliases": [
+    "kidney bean curry",
+    "kidney beans"
+   ],
+   "per100g": {
+    "calories": 127,
+    "protein": 8.7,
+    "carbs": 22.8,
+    "fat": 0.5,
+    "fiber": 6.4,
+    "vitK": 8.4,
+    "b1": 0.16,
+    "folate": 130,
+    "calcium": 35,
+    "iron": 2.9,
+    "magnesium": 45,
+    "potassium": 405,
+    "zinc": 1,
+    "sodium": 2,
+    "phosphorus": 142
+   }
+  },
+  {
+   "id": "chole",
+   "name": "Chole",
+   "emoji": "🍛",
+   "serving_g": 200,
+   "aliases": [
+    "chana masala",
+    "chickpea curry"
+   ],
+   "per100g": {
+    "calories": 160,
+    "protein": 6.5,
+    "carbs": 20,
+    "fat": 6,
+    "fiber": 6,
+    "folate": 100,
+    "calcium": 45,
+    "iron": 2.2,
+    "magnesium": 40,
+    "potassium": 280,
+    "zinc": 1.1,
+    "sodium": 380,
+    "phosphorus": 120
+   }
+  },
+  {
+   "id": "samosa",
+   "name": "Samosa",
+   "emoji": "🥟",
+   "serving_g": 80,
+   "aliases": [],
+   "per100g": {
+    "calories": 308,
+    "protein": 5,
+    "carbs": 32,
+    "fat": 17.9,
+    "fiber": 3,
+    "satFat": 3.5,
+    "calcium": 30,
+    "iron": 1.6,
+    "magnesium": 25,
+    "potassium": 270,
+    "sodium": 420
+   }
+  },
+  {
+   "id": "tofu",
+   "name": "Tofu",
+   "emoji": "🧈",
+   "serving_g": 100,
+   "aliases": [
+    "bean curd"
+   ],
+   "per100g": {
+    "calories": 144,
+    "protein": 17.3,
+    "carbs": 2.8,
+    "fat": 8.7,
+    "fiber": 2.3,
+    "calcium": 683,
+    "iron": 2.7,
+    "magnesium": 58,
+    "potassium": 237,
+    "zinc": 1.6,
+    "sodium": 14,
+    "phosphorus": 190,
+    "selenium": 17
+   }
+  },
+  {
+   "id": "edamame",
+   "name": "Edamame",
+   "emoji": "🫛",
+   "serving_g": 50,
+   "aliases": [
+    "soybeans"
+   ],
+   "per100g": {
+    "calories": 121,
+    "protein": 11.9,
+    "carbs": 8.9,
+    "fat": 5.2,
+    "fiber": 5.2,
+    "sugar": 2.2,
+    "vitA": 9,
+    "vitC": 6.1,
+    "vitE": 0.68,
+    "vitK": 26.7,
+    "b1": 0.2,
+    "b2": 0.16,
+    "folate": 311,
+    "calcium": 63,
+    "iron": 2.3,
+    "magnesium": 64,
+    "potassium": 436,
+    "zinc": 1.4,
+    "sodium": 6,
+    "phosphorus": 169,
+    "selenium": 0.8
+   }
+  },
+  {
+   "id": "greek-yogurt",
+   "name": "Greek yogurt",
+   "emoji": "🥛",
+   "serving_g": 170,
+   "aliases": [
+    "yogurt",
+    "curd",
+    "dahi",
+    "hung curd"
+   ],
+   "per100g": {
+    "calories": 59,
+    "protein": 10.2,
+    "carbs": 3.6,
+    "fat": 0.4,
+    "sugar": 3.2,
+    "b2": 0.28,
+    "b12": 0.75,
+    "calcium": 110,
+    "magnesium": 11,
+    "potassium": 141,
+    "zinc": 0.52,
+    "sodium": 36,
+    "phosphorus": 135,
+    "selenium": 9.7
+   }
+  },
+  {
+   "id": "milk",
+   "name": "Milk (whole)",
+   "emoji": "🥛",
+   "serving_g": 250,
+   "aliases": [
+    "milk",
+    "dairy milk"
+   ],
+   "per100g": {
+    "calories": 61,
+    "protein": 3.2,
+    "carbs": 4.8,
+    "fat": 3.3,
+    "sugar": 5,
+    "satFat": 1.9,
+    "cholesterol": 10,
+    "vitA": 46,
+    "vitD": 1.1,
+    "b2": 0.17,
+    "b12": 0.45,
+    "calcium": 113,
+    "magnesium": 10,
+    "potassium": 132,
+    "zinc": 0.37,
+    "sodium": 43,
+    "phosphorus": 84,
+    "selenium": 3.7
+   }
+  },
+  {
+   "id": "chai",
+   "name": "Masala chai",
+   "emoji": "☕",
+   "serving_g": 150,
+   "aliases": [
+    "tea with milk",
+    "chai"
+   ],
+   "per100g": {
+    "calories": 45,
+    "protein": 1.5,
+    "carbs": 6.5,
+    "fat": 1.5,
+    "sugar": 6,
+    "calcium": 50,
+    "potassium": 70,
+    "sodium": 20
+   }
+  },
+  {
+   "id": "coffee",
+   "name": "Black coffee",
+   "emoji": "☕",
+   "serving_g": 240,
+   "aliases": [
+    "americano",
+    "espresso"
+   ],
+   "per100g": {
+    "calories": 2,
+    "b3": 0.2,
+    "magnesium": 3,
+    "potassium": 49
+   }
+  },
+  {
+   "id": "strawberries",
+   "name": "Strawberries",
+   "emoji": "🍓",
+   "serving_g": 80,
+   "aliases": [
+    "strawberry",
+    "berries"
+   ],
+   "per100g": {
+    "calories": 32,
+    "protein": 0.7,
+    "carbs": 7.7,
+    "fat": 0.3,
+    "fiber": 2,
+    "sugar": 4.9,
+    "vitA": 1,
+    "vitC": 58.8,
+    "vitK": 2.2,
+    "b6": 0.05,
+    "folate": 24,
+    "calcium": 16,
+    "iron": 0.41,
+    "magnesium": 13,
+    "potassium": 153,
+    "zinc": 0.14,
+    "sodium": 1,
+    "phosphorus": 24
+   }
+  },
+  {
+   "id": "banana",
+   "name": "Banana",
+   "emoji": "🍌",
+   "serving_g": 118,
+   "aliases": [],
+   "per100g": {
+    "calories": 89,
+    "protein": 1.1,
+    "carbs": 22.8,
+    "fat": 0.3,
+    "fiber": 2.6,
+    "sugar": 12.2,
+    "vitC": 8.7,
+    "b6": 0.37,
+    "folate": 20,
+    "calcium": 5,
+    "iron": 0.26,
+    "magnesium": 27,
+    "potassium": 358,
+    "zinc": 0.15,
+    "sodium": 1,
+    "phosphorus": 22
+   }
+  },
+  {
+   "id": "apple",
+   "name": "Apple",
+   "emoji": "🍎",
+   "serving_g": 180,
+   "aliases": [],
+   "per100g": {
+    "calories": 52,
+    "protein": 0.3,
+    "carbs": 13.8,
+    "fat": 0.2,
+    "fiber": 2.4,
+    "sugar": 10.4,
+    "vitC": 4.6,
+    "vitK": 2.2,
+    "calcium": 6,
+    "iron": 0.12,
+    "magnesium": 5,
+    "potassium": 107,
+    "sodium": 1,
+    "phosphorus": 11
+   }
+  },
+  {
+   "id": "mango",
+   "name": "Mango",
+   "emoji": "🥭",
+   "serving_g": 150,
+   "aliases": [],
+   "per100g": {
+    "calories": 60,
+    "protein": 0.8,
+    "carbs": 15,
+    "fat": 0.4,
+    "fiber": 1.6,
+    "sugar": 13.7,
+    "vitA": 54,
+    "vitC": 36.4,
+    "vitE": 0.9,
+    "vitK": 4.2,
+    "b6": 0.12,
+    "folate": 43,
+    "potassium": 168
+   }
+  },
+  {
+   "id": "honey",
+   "name": "Honey",
+   "emoji": "🍯",
+   "serving_g": 10,
+   "aliases": [],
+   "per100g": {
+    "calories": 304,
+    "protein": 0.3,
+    "carbs": 82.4,
+    "sugar": 82.1,
+    "calcium": 6,
+    "iron": 0.42,
+    "potassium": 52,
+    "sodium": 4
+   }
+  },
+  {
+   "id": "almonds",
+   "name": "Almonds",
+   "emoji": "🌰",
+   "serving_g": 28,
+   "aliases": [
+    "badam"
+   ],
+   "per100g": {
+    "calories": 579,
+    "protein": 21,
+    "carbs": 21.6,
+    "fat": 49.9,
+    "fiber": 12.5,
+    "satFat": 3.8,
+    "vitE": 25.6,
+    "b2": 1.1,
+    "b3": 3.6,
+    "folate": 44,
+    "calcium": 269,
+    "iron": 3.7,
+    "magnesium": 270,
+    "potassium": 733,
+    "zinc": 3.1,
+    "sodium": 1,
+    "phosphorus": 481
+   }
+  },
+  {
+   "id": "walnuts",
+   "name": "Walnuts",
+   "emoji": "🌰",
+   "serving_g": 28,
+   "aliases": [
+    "akhrot"
+   ],
+   "per100g": {
+    "calories": 654,
+    "protein": 15.2,
+    "carbs": 13.7,
+    "fat": 65.2,
+    "fiber": 6.7,
+    "satFat": 6.1,
+    "omega3": 9.1,
+    "b6": 0.54,
+    "folate": 98,
+    "calcium": 98,
+    "iron": 2.9,
+    "magnesium": 158,
+    "potassium": 441,
+    "zinc": 3.1,
+    "phosphorus": 346
+   }
+  },
+  {
+   "id": "ghee",
+   "name": "Ghee",
+   "emoji": "🧈",
+   "serving_g": 5,
+   "aliases": [
+    "clarified butter",
+    "butter"
+   ],
+   "per100g": {
+    "calories": 900,
+    "fat": 100,
+    "satFat": 62,
+    "cholesterol": 256,
+    "vitA": 684,
+    "vitE": 2.8
+   }
+  },
+  {
+   "id": "soy-dressing",
+   "name": "Soy-sesame dressing",
+   "emoji": "🥢",
+   "serving_g": 15,
+   "aliases": [
+    "soy sauce",
+    "ponzu",
+    "asian dressing"
+   ],
+   "per100g": {
+    "calories": 367,
+    "protein": 6.7,
+    "carbs": 20,
+    "fat": 26.7,
+    "sugar": 13.3,
+    "sodium": 3000
+   }
+  },
+  {
+   "id": "pizza",
+   "name": "Pizza (margherita)",
+   "emoji": "🍕",
+   "serving_g": 200,
+   "aliases": [
+    "pizza slice",
+    "cheese pizza"
+   ],
+   "per100g": {
+    "calories": 250,
+    "protein": 11,
+    "carbs": 30,
+    "fat": 9.5,
+    "fiber": 2,
+    "sugar": 3.6,
+    "satFat": 4.5,
+    "cholesterol": 18,
+    "vitA": 70,
+    "calcium": 190,
+    "iron": 2.3,
+    "potassium": 170,
+    "zinc": 1.3,
+    "sodium": 600,
+    "phosphorus": 190
+   }
+  }
+ ]
+}
