@@ -3,6 +3,7 @@
 Keys match the front end (`frontend/src/data/nutrients.ts`).
 """
 
+import math
 from collections.abc import Iterable, Mapping
 
 NUTRIENT_UNITS: dict[str, str] = {
@@ -49,6 +50,11 @@ MACRO_PRESETS = {
     "lowcarb": (30, 25, 45),
     "keto": (25, 5, 70),
 }
+
+
+def round_half_up(x: float) -> int:
+    """Match the front end's Math.round (Python's round() uses banker's rounding)."""
+    return int(math.floor(x + 0.5))
 
 
 def scale(nutrients: Mapping[str, float], factor: float) -> dict[str, float]:
@@ -98,7 +104,7 @@ def calorie_target(sex: str, age: int, height_cm: float, weight_kg: float, activ
     tdee = bmr * ACTIVITY_FACTORS.get(activity, 1.55)
     floor = 1500 if sex == "male" else 1200
     kcal = max(floor, tdee + AIM_ADJUST.get(aim, 0))
-    return int(round(kcal / 50) * 50)
+    return round_half_up(kcal / 50) * 50
 
 
 def default_goals(
@@ -108,12 +114,12 @@ def default_goals(
     p, c, f = MACRO_PRESETS.get(preset, MACRO_PRESETS["balanced"])
     goals: dict[str, float] = {
         "calories": kcal,
-        "protein": round(kcal * p / 100 / 4),
-        "carbs": round(kcal * c / 100 / 4),
-        "fat": round(kcal * f / 100 / 9),
-        "fiber": round(kcal / 1000 * 14),  # 14 g per 1,000 kcal
-        "sugar": round(kcal * 0.10 / 4),  # ≤10% of energy
-        "satFat": round(kcal * 0.10 / 9),  # ≤10% of energy
+        "protein": round_half_up(kcal * p / 400),
+        "carbs": round_half_up(kcal * c / 400),
+        "fat": round_half_up(kcal * f / 900),
+        "fiber": round_half_up(kcal / 1000 * 14),  # 14 g per 1,000 kcal
+        "sugar": round_half_up(kcal * 0.10 / 4),  # ≤10% of energy
+        "satFat": round_half_up(kcal * 0.10 / 9),  # ≤10% of energy
     }
     goals.update(reference_intakes(sex, age))
     return goals

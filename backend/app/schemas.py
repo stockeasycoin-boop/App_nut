@@ -91,6 +91,7 @@ class GoalsUpdate(Schema):
 
 
 class ProfileIn(Schema):
+    name: str | None = Field(None, min_length=1, max_length=80)
     sex: Literal["male", "female"]
     age: int = Field(ge=19, le=110)
     height_cm: float = Field(ge=100, le=250)
@@ -103,7 +104,7 @@ class ProfileIn(Schema):
 
 
 class ProfileOut(ProfileIn):
-    name: str
+    name: str  # type: ignore[assignment]
     maintenance_kcal: int
 
 
@@ -138,4 +139,4 @@ class FoodOut(Schema):
     name: str
     emoji: str
     serving_g: float
-    per100g: Nutrients
+    per100g: Nutrients = Field(alias="per100g")  # the camel-case generator would emit "per100G"

@@ -11,11 +11,41 @@ import { ScanFlow } from './screens/Scan'
 import { MealSheet } from './screens/MealSheet'
 import { Aside } from './components/Aside'
 import { Confetti } from './components/Confetti'
+import { FoodSearch } from './screens/Scan'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { onBackButton, setSystemBars } from './lib/native'
 
 const SCREENS = { today: Today, insights: Insights, nutrients: NutrientsScreen, profile: Profile }
 
 function Shell() {
-  const { tab } = useApp()
+  const { tab, setTab, foodSearchOpen, closeFoodSearch, logFood, scanOpen, closeScan, openMeal, setOpenMeal, theme } = useApp()
+
+  // Android back button closes the top-most layer, then returns to Today, then exits.
+  const layers = useRef({ foodSearchOpen, openMeal, scanOpen, tab })
+  useEffect(() => {
+    layers.current = { foodSearchOpen, openMeal, scanOpen, tab }
+  })
+  useEffect(
+    () =>
+      onBackButton(() => {
+        const l = layers.current
+        if (l.foodSearchOpen) closeFoodSearch()
+        else if (l.openMeal) setOpenMeal(null)
+        else if (l.scanOpen) closeScan()
+        else if (l.tab !== 'today') setTab('today')
+        else return false
+        return true
+      }),
+    [closeFoodSearch, setOpenMeal, closeScan, setTab],
+  )
+
+  useEffect(() => {
+    const media = matchMedia('(prefers-color-scheme: dark)')
+    const apply = () => setSystemBars(scanOpen || theme === 'dark' || (theme === 'system' && media.matches))
+    apply()
+    media.addEventListener('change', apply)
+    return () => media.removeEventListener('change', apply)
+  }, [theme, scanOpen])
   const scrollRef = useRef<HTMLDivElement>(null)
   const Screen = SCREENS[tab]
   useEffect(() => scrollRef.current?.scrollTo({ top: 0 }), [tab])
@@ -32,7 +62,23 @@ function Shell() {
         </div>
         <TabBar />
         <MealSheet />
+        <AnimatePresence>
+          {foodSearchOpen && (
+            <>
+              <motion.div className="backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeFoodSearch} />
+              <FoodSearch
+                title="Log a food"
+                onClose={closeFoodSearch}
+                onPick={(f) => {
+                  closeFoodSearch()
+                  logFood(f, f.servingG)
+                }}
+              />
+            </>
+          )}
+        </AnimatePresence>
         <ScanFlow />
+        <div id="overlay-root" />
         <Toast />
         <Confetti />
       </div>
@@ -42,8 +88,10 @@ function Shell() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <Shell />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <Shell />
+      </AppProvider>
+    </ErrorBoundary>
   )
 }

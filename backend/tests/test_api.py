@@ -131,5 +131,7 @@ def test_goals_reject_unknown_nutrients(client):
 
 
 def test_food_search(client):
-    names = [f["id"] for f in client.get("/v1/foods", params={"q": "biryani"}).json()]
-    assert names[0] == "chicken-biryani"
+    foods = client.get("/v1/foods", params={"q": "biryani"}).json()
+    assert foods[0]["id"] == "chicken-biryani"
+    assert set(foods[0]) == {"id", "name", "emoji", "servingG", "per100g"}
+    assert foods[0]["per100g"]["calories"] > 0

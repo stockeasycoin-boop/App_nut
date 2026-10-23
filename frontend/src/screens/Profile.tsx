@@ -1,22 +1,20 @@
 import { motion } from 'motion/react'
-import { Bell, ChevronRight, HeartPulse, Ruler, Settings } from 'lucide-react'
-import { useState, type CSSProperties } from 'react'
+import { ChevronRight, HeartPulse, Info, Server, Ruler } from 'lucide-react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useApp } from '../state/store'
 import { Segmented } from '../components/Segmented'
-import { PROFILE } from '../data/mock'
+import { Sheet } from '../components/Sheet'
+import { PRESETS, computeCalories, getServerUrl, macroGrams, saveProfileAndGoals, setServerUrl, testServer, type Activity, type Aim, type Preset, type Profile as ProfileT } from '../lib/api'
 import { fmt } from '../lib/nutrition'
 
-type Aim = 'lose' | 'maintain' | 'gain'
-type Preset = 'balanced' | 'protein' | 'lowcarb' | 'keto'
-
-const PRESETS: Record<Preset, { label: string; p: number; c: number; f: number }> = {
-  balanced: { label: 'Balanced', p: 25, c: 45, f: 30 },
-  protein: { label: 'High protein', p: 35, c: 40, f: 25 },
-  lowcarb: { label: 'Low carb', p: 30, c: 25, f: 45 },
-  keto: { label: 'Keto', p: 25, c: 5, f: 70 },
-}
-
 const DIETS = ['Vegetarian', 'Eggetarian', 'Vegan', 'Jain', 'Gluten‑free', 'Lactose‑free', 'Nut allergy']
+const ACTIVITY_LABEL: Record<Activity, string> = {
+  sedentary: 'Sedentary',
+  light: 'Lightly active',
+  moderate: 'Moderately active',
+  active: 'Very active',
+  athlete: 'Athlete',
+}
 
 const fade = (i: number) => ({
   initial: { opacity: 0, y: 14 },
@@ -25,19 +23,43 @@ const fade = (i: number) => ({
 })
 
 export function Profile() {
-  const { goals, setGoals, showToast, theme, setTheme } = useApp()
-  const [aim, setAim] = useState<Aim>('lose')
-  const [preset, setPreset] = useState<Preset>('balanced')
-  const [diets, setDiets] = useState<string[]>(['Eggetarian'])
-  const kcal = goals.calories
-  const pr = PRESETS[preset]
-  const grams = { protein: Math.round((kcal * pr.p) / 100 / 4), carbs: Math.round((kcal * pr.c) / 100 / 4), fat: Math.round((kcal * pr.f) / 100 / 9) }
-  const bmi = PROFILE.weightKg / (PROFILE.heightCm / 100) ** 2
-  const weeks = Math.round(((PROFILE.weightKg - PROFILE.targetKg) * 7700) / ((2550 - kcal) * 7))
+  const { goals, setGoals, profile, setProfile, showToast, theme, setTheme, serverMode, reload } = useApp()
+  const [draft, setDraft] = useState<ProfileT | null>(profile)
+  const [customKcal, setCustomKcal] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [serverOpen, setServerOpen] = useState(false)
 
-  const apply = (k: number, p: Preset) => {
-    const x = PRESETS[p]
-    setGoals({ calories: k, protein: Math.round((k * x.p) / 400), carbs: Math.round((k * x.c) / 400), fat: Math.round((k * x.f) / 900) })
+  // Keep the draft in sync when the profile (re)loads.
+  useEffect(() => {
+    setDraft(profile)
+    setCustomKcal(null)
+  }, [profile])
+
+  if (!draft || !profile) return <div className="page" />
+
+  const autoKcal = computeCalories(draft)
+  const kcal = customKcal ?? (draftChanged(draft, profile) ? autoKcal : goals.calories)
+  const grams = macroGrams(kcal, draft.macroPreset)
+  const pr = PRESETS[draft.macroPreset]
+  const bmi = draft.weightKg / (draft.heightCm / 100) ** 2
+  const maintenance = computeCalories({ ...draft, aim: 'maintain' })
+  const weeks = draft.targetKg && draft.aim === 'lose' && kcal < maintenance ? Math.round(((draft.weightKg - draft.targetKg) * 7700) / ((maintenance - kcal) * 7)) : 0
+  const dirty = customKcal !== null || draftChanged(draft, profile)
+  const update = (patch: Partial<ProfileT>) => setDraft((d) => (d ? { ...d, ...patch } : d))
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const res = await saveProfileAndGoals(draft, customKcal)
+      setProfile(res.profile)
+      setGoals(res.goals)
+      showToast({ emoji: '🎯', title: 'Goals saved', body: `${fmt(res.goals.calories)} kcal · ${res.goals.protein} g protein a day` })
+    } catch (e) {
+      showToast({ emoji: '⚠️', title: 'Couldn’t save', body: (e as Error).message })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -47,27 +69,24 @@ export function Profile() {
           <div className="eyebrow">Personalise</div>
           <h1 className="h1">Your goals</h1>
         </div>
-        <button className="icon-btn" aria-label="Settings">
-          <Settings size={19} />
-        </button>
       </motion.header>
 
-      <motion.section className="profile-card" {...fade(1)}>
-        <div className="avatar">{PROFILE.name[0]}</div>
+      <motion.button className="profile-card" {...fade(1)} onClick={() => setEditing(true)} aria-label="Edit profile">
+        <div className="avatar">{draft.name[0]?.toUpperCase()}</div>
         <div className="profile-main">
-          <b>{PROFILE.name}</b>
+          <b>{draft.name}</b>
           <span>
-            {PROFILE.age} yrs · {PROFILE.sex} · {PROFILE.activity}
+            {draft.age} yrs · {draft.sex === 'male' ? 'Male' : 'Female'} · {ACTIVITY_LABEL[draft.activity]}
           </span>
         </div>
-        <ChevronRight size={18} className="muted" />
+        <ChevronRight size={18} style={{ opacity: 0.6 }} />
         <div className="profile-stats">
           <div>
-            <b className="num">{PROFILE.weightKg}</b>
+            <b className="num">{draft.weightKg}</b>
             <span>kg now</span>
           </div>
           <div>
-            <b className="num">{PROFILE.targetKg}</b>
+            <b className="num">{draft.targetKg ?? '—'}</b>
             <span>kg target</span>
           </div>
           <div>
@@ -75,22 +94,21 @@ export function Profile() {
             <span>BMI</span>
           </div>
           <div>
-            <b className="num">{PROFILE.heightCm}</b>
+            <b className="num">{draft.heightCm}</b>
             <span>cm</span>
           </div>
         </div>
-      </motion.section>
+      </motion.button>
 
       <div className="section-head">
         <h2 className="h2">Goal</h2>
       </div>
       <motion.div {...fade(2)}>
         <Segmented
-          value={aim}
-          onChange={(a) => {
-            setAim(a)
-            const k = a === 'lose' ? 2100 : a === 'maintain' ? 2550 : 2900
-            apply(k, preset)
+          value={draft.aim}
+          onChange={(a: Aim) => {
+            update({ aim: a })
+            setCustomKcal(null)
           }}
           options={[
             { value: 'lose', label: '🔥 Lose' },
@@ -105,32 +123,39 @@ export function Profile() {
           <div>
             <span className="eyebrow">Daily calories</span>
             <div className="kcal-big">
-              <b className="num">{fmt(kcal)}</b>
+              <b className="num" data-testid="goal-kcal">
+                {fmt(kcal)}
+              </b>
               <small>kcal</small>
             </div>
           </div>
-          {aim === 'lose' && weeks > 0 && (
+          {weeks > 0 && (
             <span className="eta">
-              🎯 {PROFILE.targetKg} kg in ~{weeks} wks
+              🎯 {draft.targetKg} kg in ~{weeks} wks
             </span>
           )}
         </div>
         <input
           type="range"
           className="slider"
-          min={1400}
-          max={3400}
+          min={1200}
+          max={4000}
           step={50}
           value={kcal}
-          onChange={(e) => apply(Number(e.target.value), preset)}
-          style={{ '--fill': `${((kcal - 1400) / 2000) * 100}%` } as CSSProperties}
+          onChange={(e) => setCustomKcal(Number(e.target.value))}
+          style={{ '--fill': `${((kcal - 1200) / 2800) * 100}%` } as CSSProperties}
           aria-label="Daily calorie target"
         />
         <div className="slider-scale">
-          <span>1,400</span>
-          <span>Maintenance 2,550</span>
-          <span>3,400</span>
+          <span>1,200</span>
+          <span>Maintenance {fmt(maintenance)}</span>
+          <span>4,000</span>
         </div>
+        {customKcal !== null && (
+          <button className="link" style={{ marginTop: 10 }} onClick={() => setCustomKcal(null)}>
+            Use recommended ({fmt(autoKcal)} kcal)
+          </button>
+        )}
       </motion.section>
 
       <div className="section-head">
@@ -139,23 +164,16 @@ export function Profile() {
       <motion.section className="card" {...fade(4)}>
         <div className="preset-row">
           {(Object.keys(PRESETS) as Preset[]).map((p) => (
-            <button
-              key={p}
-              className={`preset ${p === preset ? 'on' : ''}`}
-              onClick={() => {
-                setPreset(p)
-                apply(kcal, p)
-              }}
-            >
+            <button key={p} className={`preset ${p === draft.macroPreset ? 'on' : ''}`} aria-pressed={p === draft.macroPreset} onClick={() => update({ macroPreset: p })}>
               {PRESETS[p].label}
             </button>
           ))}
         </div>
         <div className="mix">
           {[
-            { k: 'Protein', pct: pr.p, g: grams.protein, c: 'var(--c-protein)' },
-            { k: 'Carbs', pct: pr.c, g: grams.carbs, c: 'var(--c-carbs)' },
-            { k: 'Fat', pct: pr.f, g: grams.fat, c: 'var(--c-fat)' },
+            { k: 'Protein', pct: pr.p, c: 'var(--c-protein)' },
+            { k: 'Carbs', pct: pr.c, c: 'var(--c-carbs)' },
+            { k: 'Fat', pct: pr.f, c: 'var(--c-fat)' },
           ].map((m) => (
             <motion.span key={m.k} className="mix-seg" style={{ background: m.c }} animate={{ flexGrow: m.pct }} transition={{ type: 'spring', stiffness: 200, damping: 26 }} />
           ))}
@@ -179,41 +197,13 @@ export function Profile() {
       </motion.section>
 
       <div className="section-head">
-        <h2 className="h2">Micronutrient targets</h2>
-      </div>
-      <motion.section className="card target-card" {...fade(5)}>
-        <div className="target-row">
-          <span className="target-ic">
-            <HeartPulse size={18} />
-          </span>
-          <div>
-            <b>RDA for your age & sex</b>
-            <span>19 vitamins & minerals · auto‑adjusted</span>
-          </div>
-          <span className="switch on" aria-hidden />
-        </div>
-        <div className="target-row">
-          <span className="target-ic" style={{ background: 'var(--warn-soft)', color: 'var(--warn-text)' }}>
-            <Ruler size={18} />
-          </span>
-          <div>
-            <b>Limits</b>
-            <span>
-              Sodium {fmt(goals.sodium)} mg · Sugar {goals.sugar} g · Sat fat {goals.satFat} g
-            </span>
-          </div>
-          <ChevronRight size={18} className="muted" />
-        </div>
-      </motion.section>
-
-      <div className="section-head">
         <h2 className="h2">Diet & allergies</h2>
       </div>
-      <motion.div className="diet-chips" {...fade(6)}>
+      <motion.div className="diet-chips" {...fade(5)}>
         {DIETS.map((d) => {
-          const on = diets.includes(d)
+          const on = draft.diets.includes(d)
           return (
-            <motion.button key={d} whileTap={{ scale: 0.94 }} className={`diet ${on ? 'on' : ''}`} onClick={() => setDiets(on ? diets.filter((x) => x !== d) : [...diets, d])}>
+            <motion.button key={d} whileTap={{ scale: 0.94 }} className={`diet ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => update({ diets: on ? draft.diets.filter((x) => x !== d) : [...draft.diets, d] })}>
               {on && '✓ '}
               {d}
             </motion.button>
@@ -221,10 +211,42 @@ export function Profile() {
         })}
       </motion.div>
 
+      <motion.button className="btn btn-primary btn-block save-goals" style={{ marginTop: 18 }} disabled={!dirty || saving} onClick={save} {...fade(6)}>
+        {saving ? 'Saving…' : dirty ? 'Save goals' : 'Goals saved'}
+      </motion.button>
+
+      <div className="section-head">
+        <h2 className="h2">Vitamins & minerals</h2>
+      </div>
+      <motion.section className="card target-card" {...fade(7)}>
+        <div className="target-row">
+          <span className="target-ic">
+            <HeartPulse size={18} />
+          </span>
+          <div>
+            <b>Recommended daily intakes</b>
+            <span>
+              19 vitamins & minerals for a {draft.age}-year-old {draft.sex}, updated when your profile changes
+            </span>
+          </div>
+        </div>
+        <div className="target-row">
+          <span className="target-ic" style={{ background: 'var(--warn-soft)', color: 'var(--warn-text)' }}>
+            <Ruler size={18} />
+          </span>
+          <div>
+            <b>Daily limits</b>
+            <span>
+              Sodium {fmt(goals.sodium)} mg · Sugar {goals.sugar} g · Sat fat {goals.satFat} g
+            </span>
+          </div>
+        </div>
+      </motion.section>
+
       <div className="section-head">
         <h2 className="h2">Appearance</h2>
       </div>
-      <motion.div {...fade(7)}>
+      <motion.div {...fade(8)}>
         <Segmented
           value={theme}
           onChange={setTheme}
@@ -236,24 +258,194 @@ export function Profile() {
         />
       </motion.div>
 
-      <motion.section className="card settings" {...fade(8)}>
-        {[
-          { icon: <Bell size={18} />, label: 'Meal reminders', value: '3 a day' },
-          { icon: <HeartPulse size={18} />, label: 'Connect Health / Google Fit', value: 'Off' },
-          { icon: <Ruler size={18} />, label: 'Units', value: 'Metric' },
-        ].map((r) => (
-          <button key={r.label} className="set-row">
-            <span className="set-ic">{r.icon}</span>
-            <span className="set-label">{r.label}</span>
-            <span className="set-val">{r.value}</span>
-            <ChevronRight size={16} className="muted" />
-          </button>
-        ))}
+      <motion.section className="card settings" {...fade(9)}>
+        <button className="set-row" onClick={() => setServerOpen(true)}>
+          <span className="set-ic">
+            <Server size={18} />
+          </span>
+          <span className="set-label">Server</span>
+          <span className="set-val">{serverMode ? shortUrl(getServerUrl()) : 'Demo mode'}</span>
+          <ChevronRight size={16} className="muted" />
+        </button>
+        <div className="set-row">
+          <span className="set-ic">
+            <Info size={18} />
+          </span>
+          <span className="set-label">Version</span>
+          <span className="set-val">{__APP_VERSION__}</span>
+        </div>
       </motion.section>
 
-      <button className="btn btn-dark btn-block" style={{ marginTop: 16 }} onClick={() => showToast({ emoji: '🎯', title: 'Goals saved', body: `${fmt(kcal)} kcal · ${grams.protein} g protein a day` })}>
-        Save goals
-      </button>
+      <ProfileEditor
+        open={editing}
+        profile={draft}
+        onClose={() => setEditing(false)}
+        onApply={(p) => {
+          setDraft(p)
+          setCustomKcal(null)
+          setEditing(false)
+        }}
+      />
+      <ServerSheet
+        open={serverOpen}
+        onClose={() => setServerOpen(false)}
+        onSaved={(msg) => {
+          setServerOpen(false)
+          reload()
+          showToast(msg)
+        }}
+      />
     </div>
+  )
+}
+
+function draftChanged(a: ProfileT, b: ProfileT) {
+  return (['name', 'sex', 'age', 'heightCm', 'weightKg', 'targetKg', 'activity', 'aim', 'macroPreset'] as const).some((k) => a[k] !== b[k]) || a.diets.join() !== b.diets.join()
+}
+
+const shortUrl = (u: string | null) => (u ?? '').replace(/^https?:\/\//, '')
+
+function NumberField({ label, value, unit, min, max, step = 1, onChange }: { label: string; value: number; unit: string; min: number; max: number; step?: number; onChange: (v: number) => void }) {
+  const clamp = (v: number) => Math.min(max, Math.max(min, Math.round(v / step) * step))
+  return (
+    <label className="num-field">
+      <span>{label}</span>
+      <div className="stepper">
+        <button type="button" onClick={() => onChange(clamp(value - step))} aria-label={`Decrease ${label}`}>
+          −
+        </button>
+        <input
+          type="number"
+          inputMode="decimal"
+          value={value}
+          min={min}
+          max={max}
+          step={step}
+          onChange={(e) => e.target.value !== '' && onChange(Number(e.target.value))}
+          onBlur={(e) => onChange(clamp(Number(e.target.value) || min))}
+          aria-label={label}
+        />
+        <button type="button" onClick={() => onChange(clamp(value + step))} aria-label={`Increase ${label}`}>
+          +
+        </button>
+      </div>
+      <em>{unit}</em>
+    </label>
+  )
+}
+
+function ProfileEditor({ open, profile, onClose, onApply }: { open: boolean; profile: ProfileT; onClose: () => void; onApply: (p: ProfileT) => void }) {
+  const [p, setP] = useState(profile)
+  useEffect(() => {
+    if (open) setP(profile)
+  }, [open, profile])
+  const set = (patch: Partial<ProfileT>) => setP((x) => ({ ...x, ...patch }))
+  const valid = p.name.trim().length > 0 && p.age >= 19 && p.age <= 110 && p.heightCm >= 100 && p.heightCm <= 250 && p.weightKg >= 30 && p.weightKg <= 300
+
+  return (
+    <Sheet open={open} onClose={onClose}>
+      <h2 className="h2" style={{ margin: '6px 0 14px' }}>
+        About you
+      </h2>
+      <label className="text-field">
+        <span>Name</span>
+        <input value={p.name} maxLength={80} onChange={(e) => set({ name: e.target.value })} aria-label="Name" />
+      </label>
+      <div style={{ margin: '12px 0' }}>
+        <Segmented
+          value={p.sex}
+          onChange={(sex) => set({ sex })}
+          options={[
+            { value: 'male', label: 'Male' },
+            { value: 'female', label: 'Female' },
+          ]}
+        />
+      </div>
+      <div className="num-grid">
+        <NumberField label="Age" value={p.age} unit="years" min={19} max={110} onChange={(age) => set({ age })} />
+        <NumberField label="Height" value={p.heightCm} unit="cm" min={100} max={250} onChange={(heightCm) => set({ heightCm })} />
+        <NumberField label="Weight" value={p.weightKg} unit="kg" min={30} max={300} step={0.5} onChange={(weightKg) => set({ weightKg })} />
+        <NumberField label="Target" value={p.targetKg ?? p.weightKg} unit="kg" min={30} max={300} step={0.5} onChange={(targetKg) => set({ targetKg })} />
+      </div>
+      <div className="res-section-title">Activity</div>
+      <div className="diet-chips">
+        {(Object.keys(ACTIVITY_LABEL) as Activity[]).map((a) => (
+          <button key={a} className={`diet ${p.activity === a ? 'on' : ''}`} aria-pressed={p.activity === a} onClick={() => set({ activity: a })}>
+            {ACTIVITY_LABEL[a]}
+          </button>
+        ))}
+      </div>
+      <button className="btn btn-dark btn-block" style={{ marginTop: 18 }} disabled={!valid} onClick={() => onApply({ ...p, name: p.name.trim() })}>
+        Done
+      </button>
+      <p className="muted" style={{ fontSize: 12.5, textAlign: 'center', marginTop: 10 }}>
+        Then tap “Save goals” to recalculate your targets.
+      </p>
+    </Sheet>
+  )
+}
+
+function ServerSheet({ open, onClose, onSaved }: { open: boolean; onClose: () => void; onSaved: (toast: { emoji: string; title: string; body?: string }) => void }) {
+  const [url, setUrl] = useState(getServerUrl() ?? '')
+  const [state, setState] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle')
+  useEffect(() => {
+    if (open) {
+      setUrl(getServerUrl() ?? '')
+      setState('idle')
+    }
+  }, [open])
+
+  const connect = async () => {
+    setState('testing')
+    const ok = await testServer(url)
+    setState(ok ? 'ok' : 'fail')
+    if (ok) {
+      setServerUrl(url)
+      onSaved({ emoji: '🔗', title: 'Connected to server', body: shortUrl(getServerUrl()) })
+    }
+  }
+
+  return (
+    <Sheet open={open} onClose={onClose}>
+      <h2 className="h2" style={{ margin: '6px 0 6px' }}>
+        Server
+      </h2>
+      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.5, margin: '0 0 14px' }}>
+        Connect to your NutriLens server for real photo analysis and to keep your log across devices. On the same Wi‑Fi, use your computer’s address, e.g. <b>192.168.1.20:8000</b>.
+      </p>
+      <label className="text-field">
+        <span>Server address</span>
+        <input
+          value={url}
+          placeholder="192.168.1.20:8000"
+          inputMode="url"
+          autoCapitalize="off"
+          autoCorrect="off"
+          onChange={(e) => {
+            setUrl(e.target.value)
+            setState('idle')
+          }}
+          aria-label="Server address"
+        />
+      </label>
+      {state === 'fail' && (
+        <p className="field-error" role="alert">
+          Couldn’t reach a NutriLens server there. Check the address and that your phone is on the same network.
+        </p>
+      )}
+      <button className="btn btn-primary btn-block" style={{ marginTop: 14 }} disabled={!url.trim() || state === 'testing'} onClick={connect}>
+        {state === 'testing' ? 'Testing connection…' : 'Test & connect'}
+      </button>
+      <button
+        className="btn btn-ghost btn-block"
+        style={{ marginTop: 10 }}
+        onClick={() => {
+          setServerUrl(null)
+          onSaved({ emoji: '📱', title: 'Demo mode', body: 'Your log is stored on this device.' })
+        }}
+      >
+        Use demo mode on this device
+      </button>
+    </Sheet>
   )
 }

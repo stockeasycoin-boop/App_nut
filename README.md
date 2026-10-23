@@ -27,3 +27,30 @@ Set `VITE_API_URL=http://localhost:8000` (see `frontend/.env.example`) to use th
 FastAPI + SQLAlchemy. Claude Opus 5.5 identifies foods and portions in the photo; nutrient values come from a reference food database. See [backend/README.md](backend/README.md) to run it, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design.
 
 Food photos: [Unsplash](https://unsplash.com/license).
+
+## Android app
+
+The `frontend/android` project wraps the same web app with Capacitor.
+
+```bash
+cd frontend
+npm run android:apk          # → android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Needs JDK 21 and the Android SDK (platform 36, build-tools 36). The app starts in **demo mode**: everything works on the phone, but photo analysis returns a labelled sample result. For real analysis, run the backend on your computer and connect the phone over the same Wi‑Fi:
+
+```bash
+cd backend && .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Then in the app: **Goals → Server**, enter your computer's address (e.g. `192.168.1.20:8000`) and tap **Test & connect**.
+
+## Tests
+
+```bash
+cd backend && .venv/bin/python -m pytest     # API, nutrition maths, Claude request handling
+cd frontend && npm run test:e2e              # browser tests against the real API with a fake camera
+```
+
+The end-to-end suite starts its own backend (mock recognizer, fresh database) and front end, then drives the app the way a person would: live-camera scan, editing portions, adding missed foods, quick add, water, deleting, goals and profile, insights, demo mode, switching servers, error handling, and layout in light and dark themes.
+

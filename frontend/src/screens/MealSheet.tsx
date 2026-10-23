@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { Clock, Pencil, Trash2 } from 'lucide-react'
+import { Clock, Trash2 } from 'lucide-react'
 import { useApp } from '../state/store'
 import { Sheet } from '../components/Sheet'
 import { Ring } from '../components/Ring'
@@ -22,7 +22,7 @@ export function MealSheet() {
       {meal && (
         <>
           <div className="ms-hero">
-            <img src={meal.photo} alt="" />
+            {meal.photo ? <img src={meal.photo} alt="" /> : <div className="ms-hero-emoji">{meal.items[0]?.emoji ?? '🍽️'}</div>}
             <div className="ms-hero-shade" />
             <div className="ms-hero-text">
               <span className="ms-type">
@@ -96,9 +96,6 @@ export function MealSheet() {
           </div>
 
           <div className="ms-actions">
-            <button className="btn btn-ghost" style={{ flex: 1 }}>
-              <Pencil size={17} /> Edit
-            </button>
             <button
               className="btn btn-ghost"
               style={{ flex: 1, color: 'var(--bad)' }}

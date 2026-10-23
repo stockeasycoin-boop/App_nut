@@ -1,10 +1,11 @@
 import { motion } from 'motion/react'
-import { useState } from 'react'
-import { Flame, TrendingDown, TrendingUp, Trophy } from 'lucide-react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Flame, TrendingDown, TrendingUp, Trophy, Target } from 'lucide-react'
 import { useApp } from '../state/store'
 import { Segmented } from '../components/Segmented'
-import { NUTRIENT_HEATMAP, PROFILE, WEEK_HISTORY } from '../data/mock'
-import { fmt } from '../lib/nutrition'
+import { NUTRIENT_MAP, VITAMIN_KEYS, MINERAL_KEYS, type NutrientKey } from '../data/nutrients'
+import { fmt, microCoverage } from '../lib/nutrition'
+import { streakDays } from '../lib/insights'
 
 const fade = (i: number) => ({
   initial: { opacity: 0, y: 14 },
@@ -12,78 +13,137 @@ const fade = (i: number) => ({
   transition: { duration: 0.5, delay: 0.04 + i * 0.06, ease: [0.22, 1, 0.36, 1] as const },
 })
 
-function dayLabel(offset: number) {
-  const d = new Date()
-  d.setDate(d.getDate() + offset)
-  return d.toLocaleDateString('en-IN', { weekday: 'short' })
+const HEAT_KEYS: NutrientKey[] = ['protein', 'fiber', 'vitD', 'iron', 'vitC', 'calcium', 'magnesium', 'b12']
+const HEAT_LABEL: Partial<Record<NutrientKey, string>> = { vitD: 'Vit D', vitC: 'Vit C', magnesium: 'Magnes.', b12: 'B12' }
+
+interface Day {
+  date: Date
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  fiber: number
+  micro: number
+  meals: number
+  today: boolean
 }
 
+const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
+
 export function Insights() {
-  const { totals, goals } = useApp()
+  const { totals, goals, history, meals, status } = useApp()
   const [range, setRange] = useState<'week' | 'month'>('week')
-  const days = [
-    ...WEEK_HISTORY.map((d, i) => ({ ...d, day: dayLabel(i - 6), today: false })),
-    {
-      day: 'Today',
-      calories: Math.round(totals.calories ?? 0),
-      protein: totals.protein ?? 0,
-      carbs: totals.carbs ?? 0,
-      fat: totals.fat ?? 0,
-      fiber: totals.fiber ?? 0,
-      micro: 0,
-      today: true,
-    },
+
+  // History with today's live totals swapped in.
+  const all: Day[] = useMemo(() => {
+    if (!history) return []
+    return history.days.map((d, i) => {
+      const today = i === history.days.length - 1
+      const t = today ? totals : d.totals
+      return {
+        date: new Date(`${d.date}T12:00:00`),
+        calories: t.calories ?? 0,
+        protein: t.protein ?? 0,
+        carbs: t.carbs ?? 0,
+        fat: t.fat ?? 0,
+        fiber: t.fiber ?? 0,
+        micro: today ? microCoverage(totals, goals, [...VITAMIN_KEYS, ...MINERAL_KEYS]) : d.micro,
+        meals: today ? meals.length : d.meals,
+        today,
+      }
+    })
+  }, [history, totals, goals, meals.length])
+
+  const span = range === 'week' ? 7 : 30
+  const days = all.slice(-span)
+  const prev = range === 'week' ? all.slice(-14, -7) : []
+  const [selRaw, setSel] = useState<number | null>(null)
+  const sel = selRaw !== null && selRaw < days.length ? selRaw : days.length - 1
+
+  if (!history) {
+    return (
+      <div className="page">
+        <Header range={range} setRange={setRange} />
+        <div className="card empty-card">{status === 'error' ? 'Couldn’t load your history.' : 'Loading your trends…'}</div>
+      </div>
+    )
+  }
+
+  // Completed, logged days only — a half-eaten today would drag every average down.
+  const done = (ds: Day[]) => ds.filter((d) => !d.today && d.meals > 0)
+  const cur = done(days)
+  const before = done(prev)
+  const stat = (k: 'calories' | 'protein' | 'fiber' | 'micro') => ({
+    now: avg(cur.map((d) => d[k])),
+    delta: before.length && cur.length ? avg(cur.map((d) => d[k])) / (avg(before.map((d) => d[k])) || 1) - 1 : null,
+  })
+  const stats = [
+    { label: 'Avg calories', ...stat('calories'), unit: 'kcal', goodWhenUp: false, scale: 1 },
+    { label: 'Avg protein', ...stat('protein'), unit: 'g', goodWhenUp: true, scale: 1 },
+    { label: 'Avg fiber', ...stat('fiber'), unit: 'g', goodWhenUp: true, scale: 1 },
+    { label: 'Avg micro score', ...stat('micro'), unit: '/100', goodWhenUp: true, scale: 100 },
   ]
-  const [sel, setSel] = useState(days.length - 1)
-  const past = days.slice(0, -1)
-  const avg = (k: 'calories' | 'protein' | 'fiber') => past.reduce((a, d) => a + d[k], 0) / past.length
-  const avgP = past.reduce((a, d) => a + d.protein * 4, 0)
-  const avgC = past.reduce((a, d) => a + d.carbs * 4, 0)
-  const avgF = past.reduce((a, d) => a + d.fat * 9, 0)
-  const sumE = avgP + avgC + avgF
+
+  const eP = cur.reduce((a, d) => a + d.protein * 4, 0)
+  const eC = cur.reduce((a, d) => a + d.carbs * 4, 0)
+  const eF = cur.reduce((a, d) => a + d.fat * 9, 0)
+  const eSum = eP + eC + eF
 
   // Chart geometry
   const W = 340,
     H = 170,
     top = 18,
-    base = H - 24
-  const max = Math.max(goals.calories * 1.2, ...days.map((d) => d.calories))
+    base = H - 24,
+    plotW = W - 40
+  const max = Math.max(goals.calories * 1.25, ...days.map((d) => d.calories))
   const y = (v: number) => base - (v / max) * (base - top)
-  const bw = 26
-  const step = (W - 40) / days.length
+  const step = plotW / days.length
+  const bw = Math.min(26, step * 0.62)
   const s = days[sel]
+
+  // Highlights from the selected range.
+  const streak = streakDays(history, meals.length)
+  const proteinHits = cur.filter((d) => d.protein >= goals.protein * 0.95).length
+  const pctOf = (k: NutrientKey) => {
+    const vals = history.percentOfGoal[k]?.slice(-span) ?? []
+    const logged = vals.filter((_, i) => days[i] && !days[i].today && days[i].meals > 0)
+    return avg(logged)
+  }
+  const microRank = HEAT_KEYS.filter((k) => k !== 'protein' && k !== 'fiber')
+    .map((k) => ({ k, v: pctOf(k) }))
+    .sort((a, b) => a.v - b.v)
+  const weakest = microRank[0]
+  const strongest = microRank[microRank.length - 1]
 
   return (
     <div className="page">
-      <motion.header className="screen-head" {...fade(0)}>
-        <div>
-          <div className="eyebrow">Your trends</div>
-          <h1 className="h1">Insights</h1>
-        </div>
-      </motion.header>
-      <motion.div {...fade(1)} style={{ marginTop: 16 }}>
-        <Segmented value={range} onChange={setRange} options={[{ value: 'week', label: 'This week' }, { value: 'month', label: '30 days' }]} />
-      </motion.div>
+      <Header range={range} setRange={setRange} />
 
       {/* Stat tiles */}
       <div className="stat-grid">
-        {[
-          { label: 'Avg calories', value: fmt(avg('calories')), unit: 'kcal', delta: '−3%', good: true, down: true },
-          { label: 'Avg protein', value: fmt(avg('protein')), unit: 'g', delta: '+8%', good: true },
-          { label: 'Avg fiber', value: fmt(avg('fiber')), unit: 'g', delta: '+12%', good: true },
-          { label: 'Avg micro score', value: fmt(past.reduce((a, d) => a + d.micro, 0) / past.length), unit: '/100', delta: '−4', good: false, down: true },
-        ].map((t, i) => (
-          <motion.div key={t.label} className="stat" {...fade(2 + i * 0.4)}>
-            <span className="stat-label">{t.label}</span>
-            <div className="stat-val">
-              <b className="num">{t.value}</b>
-              <small>{t.unit}</small>
-            </div>
-            <span className={`delta ${t.good ? 'up' : 'down'}`}>
-              {'down' in t && t.down ? <TrendingDown size={13} /> : <TrendingUp size={13} />} {t.delta} vs last week
-            </span>
-          </motion.div>
-        ))}
+        {stats.map((t, i) => {
+          const up = (t.delta ?? 0) >= 0
+          const good = t.delta === null || Math.abs(t.delta) < 0.01 ? null : up === t.goodWhenUp
+          return (
+            <motion.div key={t.label} className="stat" {...fade(2 + i * 0.4)}>
+              <span className="stat-label">{t.label}</span>
+              <div className="stat-val">
+                <b className="num">{cur.length ? fmt(t.now * t.scale) : '—'}</b>
+                <small>{t.unit}</small>
+              </div>
+              {t.delta !== null && Math.abs(t.delta) < 0.005 ? (
+                <span className="delta muted">Same as last week</span>
+              ) : t.delta !== null ? (
+                <span className={`delta ${good === false ? 'down' : 'up'}`}>
+                  {up ? <TrendingUp size={13} /> : <TrendingDown size={13} />} {up ? '+' : '−'}
+                  {Math.abs(Math.round(t.delta * 100))}% vs last week
+                </span>
+              ) : (
+                <span className="delta muted">{cur.length ? `${cur.length} logged day${cur.length === 1 ? '' : 's'}` : 'No full days yet'}</span>
+              )}
+            </motion.div>
+          )
+        })}
       </div>
 
       {/* Calorie chart */}
@@ -93,40 +153,43 @@ export function Insights() {
             <div className="h2">Calories</div>
             <div className="muted micro-sub">Daily intake vs your {fmt(goals.calories)} kcal goal</div>
           </div>
-          <div className="chart-readout">
+          <div className="chart-readout" aria-live="polite">
             <b className="num">{fmt(s.calories)}</b>
-            <span>{s.today ? 'Today so far' : s.day}</span>
+            <span>{s.today ? 'Today so far' : s.date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
           </div>
         </div>
-        <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label="Calories per day for the last 7 days">
+        <svg viewBox={`0 0 ${W} ${H}`} className="chart" role="img" aria-label={`Calories per day for the last ${span} days`}>
           {[0.5, 1].map((f) => (
-            <line key={f} x1={0} x2={W} y1={y(goals.calories * f)} y2={y(goals.calories * f)} stroke="var(--line)" strokeWidth={1} />
+            <line key={f} x1={0} x2={plotW} y1={y(goals.calories * f)} y2={y(goals.calories * f)} stroke="var(--line)" strokeWidth={1} />
           ))}
-          <line x1={0} x2={W} y1={y(goals.calories)} y2={y(goals.calories)} stroke="var(--ink)" strokeOpacity={0.35} strokeWidth={1.5} strokeDasharray="4 4" />
-          <text x={W} y={y(goals.calories) + 4} textAnchor="end" className="chart-goal" paintOrder="stroke" stroke="var(--surface)" strokeWidth={6}>
+          <line x1={0} x2={plotW} y1={y(goals.calories)} y2={y(goals.calories)} stroke="var(--ink)" strokeOpacity={0.35} strokeWidth={1.5} strokeDasharray="4 4" />
+          <text x={W} y={y(goals.calories) + 4} textAnchor="end" className="chart-goal">
             {fmt(goals.calories)}
           </text>
           {days.map((d, i) => {
             const x = i * step + (step - bw) / 2
-            const h = base - y(d.calories)
+            const h = Math.max(d.calories ? 3 : 0, base - y(d.calories))
             const active = i === sel
+            const showLabel = range === 'week' || i % 5 === (days.length - 1) % 5
             return (
-              <g key={i} onClick={() => setSel(i)} style={{ cursor: 'pointer' }}>
+              <g key={d.date.toISOString()} onClick={() => setSel(i)} style={{ cursor: 'pointer' }}>
                 <rect x={i * step} y={0} width={step} height={H} fill="transparent" />
                 <motion.rect
                   x={x}
                   width={bw}
-                  rx={7}
+                  rx={Math.min(7, bw / 2)}
                   initial={{ height: 0, y: base }}
                   animate={{ height: h, y: base - h }}
-                  transition={{ duration: 0.8, delay: 0.2 + i * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ duration: 0.8, delay: 0.15 + i * (range === 'week' ? 0.05 : 0.012), ease: [0.22, 1, 0.36, 1] }}
                   fill={active ? 'url(#barGrad)' : d.today ? 'var(--brand-soft)' : 'var(--bar)'}
                   stroke={d.today && !active ? 'var(--brand)' : 'none'}
                   strokeDasharray={d.today && !active ? '3 3' : undefined}
                 />
-                <text x={i * step + step / 2} y={H - 6} textAnchor="middle" className={`chart-x ${active ? 'on' : ''}`}>
-                  {d.today ? 'Today' : d.day}
-                </text>
+                {showLabel && (
+                  <text x={i * step + step / 2} y={H - 6} textAnchor="middle" className={`chart-x ${active ? 'on' : ''}`}>
+                    {d.today ? 'Today' : range === 'week' ? d.date.toLocaleDateString('en-IN', { weekday: 'short' }) : d.date.getDate()}
+                  </text>
+                )}
               </g>
             )
           })}
@@ -142,94 +205,165 @@ export function Insights() {
       {/* Macro split */}
       <motion.section className="card" style={{ marginTop: 12 }} {...fade(5)}>
         <div className="h2">Where your energy comes from</div>
-        <div className="muted micro-sub">7‑day average · target 25 / 45 / 30</div>
-        <div className="split">
-          {[
-            { k: 'Protein', v: avgP / sumE, c: 'var(--c-protein)' },
-            { k: 'Carbs', v: avgC / sumE, c: 'var(--c-carbs)' },
-            { k: 'Fat', v: avgF / sumE, c: 'var(--c-fat)' },
-          ].map((m, i) => (
-            <motion.div key={m.k} className="split-seg" initial={{ flexGrow: 0 }} animate={{ flexGrow: m.v }} transition={{ duration: 0.9, delay: 0.3 + i * 0.1 }}>
-              <span className="split-bar" style={{ background: m.c }} />
-              <b className="num">{Math.round(m.v * 100)}%</b>
-              <span>{m.k}</span>
-            </motion.div>
-          ))}
-        </div>
+        <div className="muted micro-sub">Average of logged days · your target is {goalsSplit(goals)}</div>
+        {eSum > 0 ? (
+          <div className="split">
+            {[
+              { k: 'Protein', v: eP / eSum, c: 'var(--c-protein)' },
+              { k: 'Carbs', v: eC / eSum, c: 'var(--c-carbs)' },
+              { k: 'Fat', v: eF / eSum, c: 'var(--c-fat)' },
+            ].map((m, i) => (
+              <motion.div key={m.k} className="split-seg" initial={{ flexGrow: 0 }} animate={{ flexGrow: m.v }} transition={{ duration: 0.9, delay: 0.3 + i * 0.1 }}>
+                <span className="split-bar" style={{ background: m.c }} />
+                <b className="num">{Math.round(m.v * 100)}%</b>
+                <span>{m.k}</span>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted empty-inline">Log a full day to see your energy split.</p>
+        )}
       </motion.section>
 
       {/* Heatmap */}
       <motion.section className="card" style={{ marginTop: 12 }} {...fade(6)}>
         <div className="h2">Nutrient consistency</div>
         <div className="muted micro-sub">% of daily goal · last 14 days</div>
-        <Heatmap />
+        <Heatmap all={all} percentOfGoal={history.percentOfGoal} totals={totals} goals={goals} />
       </motion.section>
 
       {/* Highlights */}
       <div className="section-head">
-        <h2 className="h2">This week</h2>
+        <h2 className="h2">{range === 'week' ? 'This week' : 'Last 30 days'}</h2>
       </div>
       <div className="hl-list">
         {[
-          { icon: <Flame size={18} />, tone: 'warm', title: `${PROFILE.streak}‑day logging streak`, body: 'Your longest yet. Log dinner to keep it alive.' },
-          { icon: <Trophy size={18} />, tone: 'good', title: 'Protein goal hit 5 of 7 days', body: 'Up from 3 last week — great consistency.' },
-          { icon: <TrendingDown size={18} />, tone: 'bad', title: 'Vitamin D is your weakest link', body: 'Averaging 41% of goal. Salmon, eggs or 15 min of sun help.' },
-        ].map((h, i) => (
-          <motion.div key={h.title} className="hl-card" {...fade(7 + i * 0.5)}>
-            <span className={`hl-icon ${h.tone}`}>{h.icon}</span>
-            <div>
-              <b>{h.title}</b>
-              <span>{h.body}</span>
-            </div>
-          </motion.div>
-        ))}
+          {
+            icon: <Flame size={18} />,
+            tone: 'warm',
+            title: streak ? `${streak}‑day logging streak` : 'Start a streak today',
+            body: streak ? (meals.length ? 'Nice — today is logged.' : 'Log a meal today to keep it going.') : 'Log a meal to start counting.',
+          },
+          cur.length > 0 && {
+            icon: <Trophy size={18} />,
+            tone: 'good',
+            title: `Protein goal hit ${proteinHits} of ${cur.length} day${cur.length === 1 ? '' : 's'}`,
+            body: proteinHits / cur.length >= 0.7 ? 'Great consistency.' : `Aim for ${goals.protein} g — eggs, dal, paneer and chicken help.`,
+          },
+          cur.length > 0 &&
+            weakest && {
+              icon: <Target size={18} />,
+              tone: 'bad',
+              title: `${NUTRIENT_MAP[weakest.k].label} is your weakest link`,
+              body: `Averaging ${Math.round(weakest.v)}% of goal. ${strongest ? `${NUTRIENT_MAP[strongest.k].label} is your strongest at ${Math.round(strongest.v)}%.` : ''}`,
+            },
+        ]
+          .filter(Boolean)
+          .map((h, i) => {
+            const c = h as { icon: ReactNode; tone: string; title: string; body: string }
+            return (
+              <motion.div key={c.title} className="hl-card" {...fade(7 + i * 0.5)}>
+                <span className={`hl-icon ${c.tone}`}>{c.icon}</span>
+                <div>
+                  <b>{c.title}</b>
+                  <span>{c.body}</span>
+                </div>
+              </motion.div>
+            )
+          })}
       </div>
     </div>
   )
 }
 
-function Heatmap() {
+function goalsSplit(g: Record<NutrientKey, number>) {
+  const e = g.protein * 4 + g.carbs * 4 + g.fat * 9 || 1
+  return [g.protein * 4, g.carbs * 4, g.fat * 9].map((v) => Math.round((100 * v) / e)).join(' / ')
+}
+
+function Header({ range, setRange }: { range: 'week' | 'month'; setRange: (r: 'week' | 'month') => void }) {
+  return (
+    <>
+      <motion.header className="screen-head" {...fade(0)}>
+        <div>
+          <div className="eyebrow">Your trends</div>
+          <h1 className="h1">Insights</h1>
+        </div>
+      </motion.header>
+      <motion.div {...fade(1)} style={{ marginTop: 16 }}>
+        <Segmented value={range} onChange={setRange} options={[{ value: 'week', label: 'This week' }, { value: 'month', label: '30 days' }]} />
+      </motion.div>
+    </>
+  )
+}
+
+function Heatmap({
+  all,
+  percentOfGoal,
+  totals,
+  goals,
+}: {
+  all: Day[]
+  percentOfGoal: Partial<Record<NutrientKey, number[]>>
+  totals: Record<string, number | undefined>
+  goals: Record<NutrientKey, number>
+}) {
   const [cell, setCell] = useState<{ r: number; c: number } | null>(null)
-  const color = (v: number) => {
-    // Sequential single-hue ramp (green), light → dark.
-    const i = v >= 100 ? 5 : v >= 80 ? 4 : v >= 60 ? 3 : v >= 40 ? 2 : v >= 20 ? 1 : 0
-    return `var(--h${i})`
-  }
-  const sel = cell ? NUTRIENT_HEATMAP[cell.r] : null
+  const days = all.slice(-14)
+  const rows = HEAT_KEYS.map((k) => {
+    const vals = (percentOfGoal[k] ?? []).slice(-14)
+    // Today's column comes from live totals.
+    vals[vals.length - 1] = Math.round((100 * (totals[k] ?? 0)) / goals[k])
+    return { k, label: HEAT_LABEL[k] ?? NUTRIENT_MAP[k].label, vals }
+  })
+  const level = (v: number) => (v >= 100 ? 5 : v >= 80 ? 4 : v >= 60 ? 3 : v >= 40 ? 2 : v >= 20 ? 1 : 0)
+  const sel = cell ? rows[cell.r] : null
+  const selDay = cell ? days[cell.c] : null
+
   return (
     <div className="heat">
-      <div className="heat-tip">
-        {sel && cell ? (
+      <div className="heat-tip" aria-live="polite">
+        {sel && cell && selDay ? (
           <>
-            <b>{sel.label}</b> · {cell.c === 13 ? 'today' : `${13 - cell.c} days ago`} · <b className="num">{sel.values[cell.c]}%</b> of goal
+            <b>{sel.label}</b> · {selDay.today ? 'today' : selDay.date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} ·{' '}
+            {selDay.meals ? (
+              <>
+                <b className="num">{sel.vals[cell.c]}%</b> of goal
+              </>
+            ) : (
+              'nothing logged'
+            )}
           </>
         ) : (
           <span className="muted">Tap a cell for details</span>
         )}
       </div>
-      {NUTRIENT_HEATMAP.map((row, r) => (
-        <div key={row.key} className="heat-row">
+      {rows.map((row, r) => (
+        <div key={row.k} className="heat-row">
           <span className="heat-label">{row.label}</span>
           <div className="heat-cells">
-            {row.values.map((v, c) => (
-              <motion.button
-                key={c}
-                className={`heat-cell ${cell?.r === r && cell?.c === c ? 'on' : ''}`}
-                style={{ background: color(v) }}
-                onClick={() => setCell({ r, c })}
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 + c * 0.02 + r * 0.03 }}
-                aria-label={`${row.label}, ${v}% of goal`}
-              />
-            ))}
+            {row.vals.map((v, c) => {
+              const empty = !days[c]?.meals
+              return (
+                <motion.button
+                  key={c}
+                  className={`heat-cell ${cell?.r === r && cell?.c === c ? 'on' : ''} ${empty ? 'empty' : ''}`}
+                  style={{ background: empty ? 'var(--track)' : `var(--h${level(v)})` }}
+                  onClick={() => setCell({ r, c })}
+                  initial={{ opacity: 0, scale: 0.6 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 + c * 0.02 + r * 0.03 }}
+                  aria-label={`${row.label}, ${empty ? 'nothing logged' : `${v}% of goal`}`}
+                />
+              )
+            })}
           </div>
         </div>
       ))}
       <div className="heat-legend">
         <span>0%</span>
-        {[0, 1, 2, 3, 4, 5].map((i) => `var(--h${i})`).map((c) => (
-          <i key={c} style={{ background: c }} />
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <i key={i} style={{ background: `var(--h${i})` }} />
         ))}
         <span>100%+</span>
       </div>

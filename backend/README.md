@@ -13,7 +13,9 @@ cp .env.example .env            # set ANTHROPIC_API_KEY, or NUTRILENS_VISION_PRO
 
 Interactive docs: http://localhost:8000/docs. Tests: `.venv/bin/python -m pytest`.
 
-Point the front end at it with `VITE_API_URL=http://localhost:8000` in `frontend/.env`.
+Point the front end at it with `VITE_API_URL=http://localhost:8000` in `frontend/.env`, or set it inside the app under **Goals → Server**. To use it from a phone on the same Wi‑Fi, start uvicorn with `--host 0.0.0.0`.
+
+CORS allows the local dev servers, the Android app (`http://localhost`, `capacitor://localhost`) and private-network addresses. Restrict `NUTRILENS_CORS_ORIGIN_REGEX` when deploying publicly.
 
 ## How a photo becomes nutrients
 

@@ -34,7 +34,11 @@ def get_profile(user: User = Depends(current_user)):
 
 @router.put("/profile", response_model=ProfileOut, response_model_by_alias=True)
 def update_profile(body: ProfileIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    for field, value in body.model_dump().items():
+    data = body.model_dump()
+    name = data.pop("name")
+    if name:
+        user.name = name.strip()
+    for field, value in data.items():
         setattr(user.profile, field, value)
     # Recompute every goal the user hasn't set by hand.
     fresh = goals_for(user.profile)

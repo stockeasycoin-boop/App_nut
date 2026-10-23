@@ -1,10 +1,13 @@
 import { motion } from 'motion/react'
-import { Bell, Camera, ChevronRight, Flame, Plus, Sparkles } from 'lucide-react'
+import { Bell, Camera, ChevronRight, Flame, Plus, RotateCw, Search, Sparkles } from 'lucide-react'
 import { Ring } from '../components/Ring'
 import { Bar } from '../components/Bar'
 import { AnimatedNumber } from '../components/AnimatedNumber'
 import { useApp } from '../state/store'
-import { MEAL_META, PROFILE, RECENT_FOODS, SUGGESTIONS, WEEK_HISTORY, type MealType } from '../data/mock'
+import { MEAL_META, QUICK_ADD, SUGGESTIONS, type MealType } from '../data/mock'
+import { localFood } from '../lib/api'
+import { biggestGaps, nutrientName, streakDays } from '../lib/insights'
+import { MealThumb } from '../components/MealThumb'
 import { NUTRIENT_MAP, VITAMIN_KEYS, MINERAL_KEYS, type NutrientKey } from '../data/nutrients'
 import { fmt, mealTotal, microCoverage } from '../lib/nutrition'
 
@@ -35,13 +38,32 @@ function greeting() {
 }
 
 export function Today() {
-  const { totals, goals, meals, openScan, setTab, setOpenMeal, water, setWater } = useApp()
+  const { totals, goals, meals, openScan, setTab, setOpenMeal, water, setWater, profile, history, status, reload, showToast, logFood, openFoodSearch } = useApp()
   const cal = totals.calories ?? 0
   const left = Math.max(0, goals.calories - cal)
+  const over = Math.max(0, cal - goals.calories)
+  const streak = streakDays(history, meals.length)
+  const gaps = biggestGaps(totals, goals)
+  const picks = SUGGESTIONS.filter((s) => s.boosts.some((b) => gaps.includes(b as NutrientKey))).slice(0, 3)
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const offset = i - 6
+    if (offset === 0) return { offset, pct: cal / goals.calories }
+    const h = history?.days[history.days.length - 1 + offset]
+    return { offset, pct: h ? (h.totals.calories ?? 0) / goals.calories : 0 }
+  })
+
+  const quickAdd = (q: (typeof QUICK_ADD)[number]) => {
+    const food = localFood(q.foodId)
+    if (food) logFood(food, q.grams, q.name, q.photo)
+  }
   const coverage = microCoverage(totals, goals, [...VITAMIN_KEYS, ...MINERAL_KEYS])
   const todayPct = cal / goals.calories
   const loggedTypes = new Set(meals.map((m) => m.type))
-  const nextEmpty = (['breakfast', 'lunch', 'snack', 'dinner'] as MealType[]).find((t) => !loggedTypes.has(t))
+  const ORDER: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner']
+  const hour = new Date().getHours()
+  const nowType: MealType = hour < 11 ? 'breakfast' : hour < 15 ? 'lunch' : hour < 18 ? 'snack' : 'dinner'
+  // Suggest the meal for this time of day, else the next one still to log.
+  const nextEmpty = ORDER.slice(ORDER.indexOf(nowType)).find((t) => !loggedTypes.has(t))
 
   const dateLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })
 
@@ -52,32 +74,42 @@ export function Today() {
         <div>
           <div className="eyebrow">{dateLabel}</div>
           <h1 className="h1">
-            {greeting()}, {PROFILE.name}
+            {greeting()}
+            {profile ? `, ${profile.name}` : ''}
           </h1>
         </div>
         <div className="today-head-actions">
-          <span className="streak">
-            <Flame size={15} fill="currentColor" /> {PROFILE.streak}
+          <span className="streak" aria-label={`${streak}-day logging streak`} title={`${streak}-day logging streak`}>
+            <Flame size={15} fill="currentColor" /> {streak}
           </span>
-          <button className="icon-btn" aria-label="Notifications">
+          <button className="icon-btn" aria-label="Notifications" onClick={() => showToast({ emoji: '🔔', title: 'You’re all caught up', body: 'Meal reminders are coming in a future update.' })}>
             <Bell size={19} />
-            <i className="notif-dot" />
           </button>
         </div>
       </motion.header>
 
-      {/* Week strip */}
-      <motion.div className="week" {...fade(1)}>
-        {[...WEEK_HISTORY.map((d) => ({ day: d.day, pct: d.calories / goals.calories, today: false })), { day: 'Today', pct: todayPct, today: true }].map(
-          (d, i) => (
-            <button key={i} className={`week-day ${d.today ? 'on' : ''}`}>
-              <span className="week-label">{dayOffset(i - 6).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
-              <Ring size={30} stroke={4} progress={d.pct} color={d.pct > 1.08 ? 'var(--c-cal-2)' : d.today ? 'var(--on-ink)' : 'var(--brand)'} track={d.today ? 'color-mix(in srgb, var(--on-ink) 20%, transparent)' : undefined} delay={0.2 + i * 0.04}>
-                <span className="week-num">{dayOffset(i - 6).getDate()}</span>
+      {status === 'error' && (
+        <div className="load-error" role="alert">
+          <span>Couldn’t reach the server.</span>
+          <button className="link" onClick={reload}>
+            <RotateCw size={14} /> Retry
+          </button>
+        </div>
+      )}
+
+      {/* Week strip — calories vs goal for the last 7 days */}
+      <motion.div className="week" {...fade(1)} role="list" aria-label="Last 7 days">
+        {week.map((d, i) => {
+          const today = d.offset === 0
+          return (
+            <div key={i} role="listitem" className={`week-day ${today ? 'on' : ''}`} aria-label={`${dayOffset(d.offset).toLocaleDateString('en-IN', { weekday: 'long' })}: ${Math.round(d.pct * 100)}% of calorie goal`}>
+              <span className="week-label">{dayOffset(d.offset).toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+              <Ring size={30} stroke={4} progress={d.pct} color={d.pct > 1.08 ? 'var(--c-cal-2)' : today ? 'var(--on-ink)' : 'var(--brand)'} track={today ? 'color-mix(in srgb, var(--on-ink) 20%, transparent)' : undefined} delay={0.2 + i * 0.04}>
+                <span className="week-num">{dayOffset(d.offset).getDate()}</span>
               </Ring>
-            </button>
-          ),
-        )}
+            </div>
+          )
+        })}
       </motion.div>
 
       {/* Hero rings */}
@@ -106,10 +138,10 @@ export function Today() {
           </div>
           <div className="hero-stats">
             <div className="eyebrow" style={{ color: 'rgba(255,255,255,.55)' }}>
-              Remaining
+              {over ? 'Over goal' : 'Remaining'}
             </div>
-            <div className="hero-big num">
-              <AnimatedNumber value={left} />
+            <div className="hero-big num" data-testid="kcal-left">
+              <AnimatedNumber value={Math.round(over || left)} />
             </div>
             <div className="hero-sub">kcal of {fmt(goals.calories)}</div>
             <div className="hero-legend">
@@ -150,7 +182,7 @@ export function Today() {
                 <small>/ {g}g</small>
               </div>
               <Bar value={v / g} color={`linear-gradient(90deg,${m.grad[0]},${m.grad[1]})`} delay={0.3 + i * 0.08} />
-              <div className="macro-left">{done ? '✓ Goal reached' : `${fmt(g - v)}g to go`}</div>
+              <div className="macro-left">{done ? '✓ Goal reached' : `${fmt(g - v)} g to go`}</div>
             </motion.button>
           )
         })}
@@ -183,31 +215,46 @@ export function Today() {
         </div>
       </motion.section>
 
-      {/* Smart suggestion */}
+      {/* Smart suggestion — based on today's biggest gaps */}
       <motion.section className="insight" {...fade(7)}>
         <div className="insight-head">
           <span className="insight-badge">
             <Sparkles size={14} /> Smart pick
           </span>
         </div>
-        <p className="insight-text">
-          You’re short on <b>iron</b> and <b>fiber</b> today. Any of these for dinner closes the gap:
-        </p>
-        <div className="sugg-row">
-          {SUGGESTIONS.map((s) => (
-            <div key={s.name} className="sugg">
-              <img src={s.photo} alt="" />
-              <div className="sugg-body">
-                <b>{s.name}</b>
-                <div className="sugg-tags">
-                  {s.boosts.map((b) => (
-                    <span key={b}>+{NUTRIENT_MAP[b].short}</span>
-                  ))}
+        {gaps.length && picks.length ? (
+          <>
+            <p className="insight-text">
+              You’re behind on{' '}
+              {gaps.map((g, i) => (
+                <span key={g}>
+                  {i > 0 && ' and '}
+                  <b>{nutrientName(g)}</b>
+                </span>
+              ))}{' '}
+              for this time of day. Any of these closes the gap:
+            </p>
+            <div className="sugg-row">
+              {picks.map((s) => (
+                <div key={s.name} className="sugg">
+                  <img src={s.photo} alt="" />
+                  <div className="sugg-body">
+                    <b>{s.name}</b>
+                    <div className="sugg-tags">
+                      {s.boosts.slice(0, 3).map((b) => (
+                        <span key={b}>+{NUTRIENT_MAP[b].short}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        ) : (
+          <p className="insight-text" style={{ marginBottom: 0 }}>
+            You’re right on track for this time of day. Keep it up! 🎉
+          </p>
+        )}
       </motion.section>
 
       {/* Meals */}
@@ -226,7 +273,7 @@ export function Today() {
           const sum = p + c + f || 1
           return (
             <motion.button key={m.id} className="meal" {...fade(8 + i * 0.5)} whileTap={{ scale: 0.98 }} onClick={() => setOpenMeal(m)} layout>
-              <img src={m.photo} alt="" className="meal-photo" />
+              <MealThumb meal={m} className="meal-photo" />
               <div className="meal-body">
                 <div className="meal-type">
                   {MEAL_META[m.type].label} · {m.time}
@@ -245,16 +292,14 @@ export function Today() {
             </motion.button>
           )
         })}
-        {nextEmpty && (
+        {(
           <motion.button className="meal-empty" {...fade(10)} whileTap={{ scale: 0.98 }} onClick={openScan}>
             <span className="meal-empty-icon">
               <Camera size={22} />
             </span>
             <div>
-              <b>Snap your {MEAL_META[nextEmpty].label.toLowerCase()}</b>
-              <span>
-                {fmt(left)} kcal left · AI fills in the nutrients
-              </span>
+              <b>{nextEmpty ? `Snap your ${MEAL_META[nextEmpty].label.toLowerCase()}` : 'Snap another meal'}</b>
+              <span>{over ? `${fmt(over)} kcal over today’s goal` : `${fmt(left)} kcal left · AI fills in the nutrients`}</span>
             </div>
             <Plus size={20} className="meal-empty-plus" />
           </motion.button>
@@ -298,19 +343,25 @@ export function Today() {
         </span>
       </div>
       <div className="quick-row">
-        {RECENT_FOODS.map((f) => (
-          <button key={f.name} className="quick">
-            <img src={f.photo} alt="" />
-            <div>
-              <b>{f.name}</b>
-              <span className="num">{f.kcal} kcal</span>
-            </div>
-            <span className="quick-plus">
-              <Plus size={16} strokeWidth={2.6} />
-            </span>
-          </button>
-        ))}
+        {QUICK_ADD.map((f) => {
+          const food = localFood(f.foodId)
+          return (
+            <motion.button key={f.foodId} className="quick" whileTap={{ scale: 0.96 }} onClick={() => quickAdd(f)} aria-label={`Add ${f.name}`}>
+              <img src={f.photo} alt="" />
+              <div>
+                <b>{f.name}</b>
+                <span className="num">{fmt(((food?.per100g.calories ?? 0) * f.grams) / 100)} kcal</span>
+              </div>
+              <span className="quick-plus">
+                <Plus size={16} strokeWidth={2.6} />
+              </span>
+            </motion.button>
+          )
+        })}
       </div>
+      <motion.button className="search-food" whileTap={{ scale: 0.98 }} onClick={openFoodSearch}>
+        <Search size={18} /> Search 50+ foods to log without a photo
+      </motion.button>
     </div>
   )
 }

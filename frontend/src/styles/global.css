@@ -46,6 +46,9 @@
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --tabbar-h: 84px;
+  /* Safe areas: Capacitor injects --safe-area-inset-*; browsers provide env(). */
+  --sat: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --sab: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --on-ink: #ffffff;
   --brand-text: #0b7a4c;
   --warn-text: #c2560c;
@@ -232,7 +235,7 @@ img {
   inset: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: calc(var(--tabbar-h) + 32px);
+  padding-bottom: calc(var(--tabbar-h) + 32px + var(--sab));
   scrollbar-width: none;
 }
 .scroll::-webkit-scrollbar {
@@ -240,7 +243,7 @@ img {
 }
 
 .page {
-  padding: 18px 18px 0;
+  padding: calc(18px + var(--sat)) 18px 0;
 }
 
 /* ───────────── Typography ───────────── */
@@ -408,7 +411,7 @@ img {
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: 12px;
+  bottom: calc(12px + var(--sab));
   height: 70px;
   z-index: 30;
   display: grid;
@@ -492,7 +495,7 @@ img {
 }
 .sheet-body {
   overflow-y: auto;
-  padding: 8px 18px 28px;
+  padding: 8px 18px calc(28px + var(--sab));
   scrollbar-width: none;
 }
 
@@ -500,7 +503,7 @@ img {
 
 .toast {
   position: absolute;
-  top: 14px;
+  top: calc(14px + var(--sat));
   left: 14px;
   right: 14px;
   z-index: 80;
@@ -645,4 +648,18 @@ img {
 }
 .aside-list svg {
   color: var(--brand);
+}
+
+.crash {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg);
+}
+.crash-emoji {
+  font-size: 56px;
 }

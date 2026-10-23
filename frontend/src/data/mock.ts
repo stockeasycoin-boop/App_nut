@@ -28,6 +28,8 @@ export interface FoodItem {
   label?: string
   /** Position of the detection pin on the photo, in % of width/height. */
   pin?: { x: number; y: number }
+  /** Reference-database id when the item was added from food search / quick add. */
+  foodId?: string
 }
 
 export interface Meal {
@@ -131,18 +133,25 @@ export const DEMO_SCAN = {
   ],
 }
 
+/** Foods the "smart pick" card can recommend, with the nutrients each is rich in. */
 export const SUGGESTIONS = [
-  { name: 'Grilled salmon', photo: salmon, boosts: ['vitD', 'omega3', 'b12'] as const, kcal: 280 },
-  { name: 'Spinach & pomegranate', photo: spinachSalad, boosts: ['iron', 'folate', 'vitK'] as const, kcal: 190 },
-  { name: 'Quinoa power plate', photo: quinoa, boosts: ['magnesium', 'fiber', 'iron'] as const, kcal: 420 },
+  { name: 'Grilled salmon', photo: salmon, boosts: ['vitD', 'omega3', 'b12', 'protein', 'selenium'] as const },
+  { name: 'Spinach & pomegranate', photo: spinachSalad, boosts: ['iron', 'folate', 'vitK', 'vitA', 'magnesium'] as const },
+  { name: 'Quinoa power plate', photo: quinoa, boosts: ['fiber', 'magnesium', 'iron', 'phosphorus', 'zinc'] as const },
+  { name: 'Greek yogurt bowl', photo: yogurt, boosts: ['calcium', 'protein', 'b12', 'b2', 'potassium'] as const },
+  { name: 'Buddha bowl', photo: buddhaBowl, boosts: ['fiber', 'vitC', 'vitA', 'potassium', 'folate'] as const },
+  { name: 'Tandoori chicken', photo: tandoori, boosts: ['protein', 'b3', 'selenium', 'zinc', 'b6'] as const },
 ]
 
-export const RECENT_FOODS = [
-  { name: 'Veg thali', photo: thali, kcal: 640 },
-  { name: 'Tandoori chicken', photo: tandoori, kcal: 360 },
-  { name: 'Paneer curry & rice', photo: paneerCurry, kcal: 610 },
-  { name: 'Chicken biryani', photo: biryani, kcal: 720 },
+/** One-tap "usuals" — each maps to a reference-database food and portion. */
+export const QUICK_ADD = [
+  { foodId: 'dal', name: 'Dal (1 bowl)', photo: thali, grams: 200 },
+  { foodId: 'tandoori-chicken', name: 'Tandoori chicken', photo: tandoori, grams: 150 },
+  { foodId: 'paneer-curry', name: 'Paneer curry', photo: paneerCurry, grams: 200 },
+  { foodId: 'chicken-biryani', name: 'Chicken biryani', photo: biryani, grams: 300 },
 ]
+
+export const SAMPLE_PHOTO = buddhaBowl
 
 /** Last 7 days (oldest → today). Today’s values are computed live. */
 export const WEEK_HISTORY = [

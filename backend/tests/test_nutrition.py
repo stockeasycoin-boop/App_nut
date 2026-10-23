@@ -13,7 +13,17 @@ def test_reference_intakes_differ_by_sex():
     m = default_goals("male", 30, 180, 80, "moderate", "maintain", "balanced")
     f = default_goals("female", 30, 165, 60, "moderate", "maintain", "balanced")
     assert m["iron"] == 8 and f["iron"] == 18
-    assert m["protein"] == round(m["calories"] * 0.25 / 4)
+    assert m["protein"] == int(m["calories"] * 25 / 400 + 0.5)
+
+
+def test_macro_rounding_matches_the_front_end():
+    # 2,600 kcal × 35% / 4 = 227.5 — Math.round gives 228; Python's round() would give 228 here
+    # but 226 for 226.5, so the backend must round halves up explicitly.
+    g = default_goals("male", 28, 176, 72, "moderate", "maintain", "protein")
+    assert g["calories"] == 2600 and g["protein"] == 228
+    from app.nutrition import round_half_up
+
+    assert round_half_up(226.5) == 227 and round_half_up(226.49) == 226
 
 
 def test_health_score_prefers_nutrient_dense_meals():

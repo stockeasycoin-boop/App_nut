@@ -1,8 +1,11 @@
 import { AnimatePresence, motion } from 'motion/react'
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 export function Sheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: ReactNode }) {
-  return (
+  // Portal into the device frame so sheets opened from a scrolled screen stay pinned to the viewport.
+  const host = document.getElementById('overlay-root') ?? document.body
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -27,6 +30,7 @@ export function Sheet({ open, onClose, children }: { open: boolean; onClose: () 
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    host,
   )
 }

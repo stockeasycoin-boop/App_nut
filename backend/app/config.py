@@ -12,7 +12,12 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./nutrilens.db"
     media_dir: Path = Path("./media")
     media_url: str = "/media"
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "capacitor://localhost"]
+    # Also allow the Android app (http(s)://localhost) and dev servers on private networks.
+    # Tighten for production deployments.
+    cors_origin_regex: str = (
+        r"https?://(localhost|127\.0\.0\.1|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2})(:\d+)?"
+    )
 
     # "claude" calls the Claude API (needs ANTHROPIC_API_KEY or an `ant auth login` profile);
     # "mock" returns a fixed demo analysis — for local development and tests.

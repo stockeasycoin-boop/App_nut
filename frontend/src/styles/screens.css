@@ -790,3 +790,102 @@
   gap: 10px;
   margin-top: 16px;
 }
+
+/* ───── Profile editor & server forms ───── */
+button.profile-card {
+  width: 100%;
+  text-align: left;
+}
+.text-field {
+  display: grid;
+  gap: 6px;
+}
+.text-field span,
+.num-field > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.text-field input {
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+.text-field input:focus {
+  border-color: var(--brand);
+}
+.field-error {
+  margin: 8px 2px 0;
+  font-size: 12.5px;
+  color: var(--bad-text);
+}
+.num-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.num-field {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+.num-field .stepper {
+  justify-content: space-between;
+}
+.num-field input {
+  width: 56px;
+  text-align: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.num-field input::-webkit-outer-spin-button,
+.num-field input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+.num-field em {
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ms-hero-emoji {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 84px;
+  background: linear-gradient(150deg, #1e3b2e, #12151c);
+}
+.empty-card {
+  margin-top: 14px;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 600;
+}
+.empty-inline {
+  font-size: 13.5px;
+  margin: 14px 0 0;
+}
+.delta.muted {
+  color: var(--muted);
+}
+.heat-cell.empty {
+  opacity: 0.6;
+}
