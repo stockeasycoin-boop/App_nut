@@ -20,6 +20,10 @@ npm run build
 - **Nutrients** – micronutrient score, every vitamin/mineral/limit with status, today's sources and foods that close the gap.
 - **Goals** – profile, lose/maintain/gain, calorie slider, macro presets, micronutrient targets, diet & allergies, appearance.
 
-All data currently comes from `src/data/mock.ts` through `src/lib/api.ts`; see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the planned backend.
+Set `VITE_API_URL=http://localhost:8000` (see `frontend/.env.example`) to use the backend. Without it the front end runs on the mock data in `src/data/mock.ts`.
+
+## Backend (`backend/`)
+
+FastAPI + SQLAlchemy. Claude Opus 5.5 identifies foods and portions in the photo; nutrient values come from a reference food database. See [backend/README.md](backend/README.md) to run it, and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design.
 
 Food photos: [Unsplash](https://unsplash.com/license).

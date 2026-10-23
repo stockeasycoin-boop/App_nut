@@ -37,8 +37,8 @@ export function Ring({ size, stroke, progress, color = 'var(--brand)', gradient,
           stroke={gradient ? `url(#${id})` : color}
           strokeWidth={stroke}
           strokeLinecap="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: p === 0 ? 0.0001 : p }}
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={{ pathLength: p === 0 ? 0.0001 : p, opacity: p === 0 ? 0 : 1 }}
           transition={{ duration: 1.3, delay, ease: [0.22, 1, 0.36, 1] }}
         />
       </svg>

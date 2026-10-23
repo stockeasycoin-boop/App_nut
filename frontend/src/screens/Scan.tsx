@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Check, ChevronLeft, Images, Minus, Plus, ScanBarcode, Sparkles, X, Zap } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../state/store'
-import { analyzeMealPhoto, type ScanResult } from '../lib/api'
+import { analyzeMealPhoto, logMeal, type ScanResult } from '../lib/api'
 import { DEMO_SCAN, MEAL_META, type MealType } from '../data/mock'
 import { NUTRIENT_MAP, VITAMIN_KEYS, MINERAL_KEYS, type NutrientKey } from '../data/nutrients'
 import { fmt, itemNutrients, itemsTotal } from '../lib/nutrition'
@@ -26,6 +26,7 @@ export function ScanFlow() {
 }
 
 function ScanInner({ onClose }: { onClose: () => void }) {
+  const { showToast } = useApp()
   const [phase, setPhase] = useState<Phase>('camera')
   const [photo, setPhoto] = useState<string>(DEMO_SCAN.photo)
   const [result, setResult] = useState<ScanResult | null>(null)
@@ -36,10 +37,15 @@ function ScanInner({ onClose }: { onClose: () => void }) {
     if (url) setPhoto(url)
     setPhase('analyzing')
     setStep(0)
-    analyzeMealPhoto(url ?? photo).then((r) => {
-      setResult(r)
-      setPhase('results')
-    })
+    analyzeMealPhoto(url ?? photo)
+      .then((r) => {
+        setResult(r)
+        setPhase('results')
+      })
+      .catch((e: Error) => {
+        setPhase('camera')
+        showToast({ emoji: '📷', title: 'Couldn’t analyse that photo', body: e.message })
+      })
   }
 
   useEffect(() => {
@@ -229,7 +235,7 @@ const listJoin = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0,
 const PORTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
 function Results({ result, onDone }: { result: ScanResult; onDone: () => void }) {
-  const { totals, goals, meals, addMeal, setTab, showToast, celebrate } = useApp()
+  const { totals, goals, meals, addMeal, replaceMeal, removeMeal, setTab, showToast, celebrate } = useApp()
   const [items, setItems] = useState(result.items)
   const [mealType, setMealType] = useState<MealType>(() => suggestedMealType(new Set(meals.map((m) => m.type))))
   const total = useMemo(() => itemsTotal(items), [items])
@@ -256,15 +262,23 @@ function Results({ result, onDone }: { result: ScanResult; onDone: () => void })
   const after = (totals.calories ?? 0) + kcal
 
   const log = () => {
-    addMeal({
-      id: `m${Date.now()}`,
+    // Optimistic: show the meal immediately, then swap in the server's copy.
+    const draft = {
+      id: `draft-${Date.now()}`,
       type: mealType,
       name: result.name,
       time: new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }).toUpperCase(),
       photo: result.photo,
       score: result.score,
       items,
-    })
+    }
+    addMeal(draft)
+    logMeal(draft, result.analysisId)
+      .then((saved) => replaceMeal(draft.id, saved))
+      .catch((e: Error) => {
+        removeMeal(draft.id)
+        showToast({ emoji: '⚠️', title: 'Meal not saved', body: e.message })
+      })
     const newlyMet = (['protein', 'fiber', 'vitC', 'vitA', 'iron', 'magnesium'] as NutrientKey[]).filter(
       (k) => (totals[k] ?? 0) < goals[k] && (totals[k] ?? 0) + (total[k] ?? 0) >= goals[k],
     )
