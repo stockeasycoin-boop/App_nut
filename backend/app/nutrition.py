@@ -50,6 +50,10 @@ MACRO_PRESETS = {
     "lowcarb": (30, 25, 45),
     "keto": (25, 5, 70),
 }
+# "bodyweight" (from the onboarding flow): protein from body weight, fat 27% of energy,
+# carbs fill the rest. Grams of protein per kg, by aim.
+PROTEIN_PER_KG = {"lose": 2.0, "maintain": 1.6, "gain": 1.8}
+BMR_SEX_OFFSET = {"male": 5, "female": -161, "unspecified": -78}  # midpoint when not given
 
 
 def round_half_up(x: float) -> int:
@@ -70,7 +74,14 @@ def total(items: Iterable[Mapping[str, float]]) -> dict[str, float]:
 
 
 def reference_intakes(sex: str, age: int) -> dict[str, float]:
-    """US/Canada Dietary Reference Intakes (RDA or AI) for adults 19+."""
+    """US/Canada Dietary Reference Intakes (RDA or AI) for adults 19+.
+
+    When sex isn't given, each target is the higher of the male and female values, so
+    nobody is told they've met a target that may be too low for them.
+    """
+    if sex not in ("male", "female"):
+        m, f = reference_intakes("male", age), reference_intakes("female", age)
+        return {k: max(m[k], f[k]) for k in m}
     male = sex == "male"
     older = age >= 51
     return {
@@ -100,9 +111,9 @@ def reference_intakes(sex: str, age: int) -> dict[str, float]:
 
 def calorie_target(sex: str, age: int, height_cm: float, weight_kg: float, activity: str, aim: str) -> int:
     """Mifflin-St Jeor BMR × activity factor, adjusted for the user's aim, rounded to 50 kcal."""
-    bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + (5 if sex == "male" else -161)
+    bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + BMR_SEX_OFFSET.get(sex, -78)
     tdee = bmr * ACTIVITY_FACTORS.get(activity, 1.55)
-    floor = 1500 if sex == "male" else 1200
+    floor = 1200 if sex == "female" else 1500
     kcal = max(floor, tdee + AIM_ADJUST.get(aim, 0))
     return round_half_up(kcal / 50) * 50
 
@@ -111,18 +122,25 @@ def default_goals(
     sex: str, age: int, height_cm: float, weight_kg: float, activity: str, aim: str, preset: str
 ) -> dict[str, float]:
     kcal = calorie_target(sex, age, height_cm, weight_kg, activity, aim)
-    p, c, f = MACRO_PRESETS.get(preset, MACRO_PRESETS["balanced"])
     goals: dict[str, float] = {
         "calories": kcal,
-        "protein": round_half_up(kcal * p / 400),
-        "carbs": round_half_up(kcal * c / 400),
-        "fat": round_half_up(kcal * f / 900),
+        **macro_grams(kcal, preset, weight_kg, aim),
         "fiber": round_half_up(kcal / 1000 * 14),  # 14 g per 1,000 kcal
         "sugar": round_half_up(kcal * 0.10 / 4),  # ≤10% of energy
         "satFat": round_half_up(kcal * 0.10 / 9),  # ≤10% of energy
     }
     goals.update(reference_intakes(sex, age))
     return goals
+
+
+def macro_grams(kcal: float, preset: str, weight_kg: float, aim: str) -> dict[str, int]:
+    if preset == "bodyweight":
+        protein = round_half_up(weight_kg * PROTEIN_PER_KG.get(aim, 1.6))
+        fat = round_half_up(kcal * 0.27 / 9)
+        carbs = max(0, round_half_up((kcal - protein * 4 - fat * 9) / 4))
+        return {"protein": protein, "carbs": carbs, "fat": fat}
+    p, c, f = MACRO_PRESETS.get(preset, MACRO_PRESETS["balanced"])
+    return {"protein": round_half_up(kcal * p / 400), "carbs": round_half_up(kcal * c / 400), "fat": round_half_up(kcal * f / 900)}
 
 
 def health_score(n: Mapping[str, float]) -> int:

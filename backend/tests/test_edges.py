@@ -85,3 +85,12 @@ def test_profile_name_update_and_validation(client):
     assert client.put("/v1/profile", json=p).json()["name"] == "Priya"
     p["age"] = 12
     assert client.put("/v1/profile", json=p).status_code == 422
+
+
+def test_profile_accepts_unspecified_sex_and_bodyweight_preset(client):
+    p = client.get("/v1/profile").json()
+    p.update(sex="unspecified", macroPreset="bodyweight", aim="maintain", weightKg=70)
+    assert client.put("/v1/profile", json=p).status_code == 200
+    goals = client.post("/v1/goals/reset").json()["values"]
+    assert goals["protein"] == 112  # 70 kg × 1.6 g/kg
+    assert goals["iron"] == 18

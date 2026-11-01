@@ -14,6 +14,7 @@ npm run build
 ```
 
 ### Screens
+- **Log in → About you** (first run, from App_nut): a one-button login (no account needed), then name (optional), age, sex (or rather not say), height, weight, activity and goal, with targets and BMI previewed as you type. Protein is set from body weight (2.0 / 1.6 / 1.8 g per kg to lose / maintain / build), fat at 27% of calories, carbs fill the rest. Sign out from Goals; your log stays saved.
 - **Today** – concentric calorie/macro rings, macro cards, vitamin & mineral spotlight, smart food suggestions, meal timeline, hydration, quick add.
 - **Scan** (center button) – camera/gallery capture → AI analysis → detected items pinned on the photo, portion steppers, health score, "rich in" highlights, impact on your day, log to a meal.
 - **Insights** – weekly calories vs goal, energy split, 14-day nutrient consistency heatmap, highlights.

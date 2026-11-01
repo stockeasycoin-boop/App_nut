@@ -29,20 +29,40 @@ export const test = base.extend<Fixtures>({
   },
 })
 
-export async function useServer(page: Page) {
-  await page.addInitScript((api) => localStorage.setItem('nutrilens-server', api), API)
+
+export async function useServer(page: Page, opts: { firstRun?: boolean } = {}) {
+  await page.addInitScript(
+    ({ api, firstRun }) => {
+      if (sessionStorage.getItem('e2e-init')) return
+      localStorage.clear()
+      localStorage.setItem('nutrilens-server', api)
+      if (!firstRun) {
+        localStorage.setItem('nutrilens-signed-in', '1')
+        localStorage.setItem('nutrilens-onboarded', '1')
+      }
+      sessionStorage.setItem('e2e-init', '1')
+    },
+    { api: API, firstRun: !!opts.firstRun },
+  )
 }
 
 /** Fresh demo mode: wipe stored data once, before the first load of this test. */
-export async function useDemo(page: Page) {
-  await page.addInitScript(() => {
-    if (!sessionStorage.getItem('e2e-init')) {
+export async function useDemo(page: Page, opts: { firstRun?: boolean } = {}) {
+  await page.addInitScript(
+    ({ firstRun }) => {
+      if (sessionStorage.getItem('e2e-init')) return
       localStorage.clear()
       localStorage.setItem('nutrilens-server', '')
+      if (!firstRun) {
+        localStorage.setItem('nutrilens-signed-in', '1')
+        localStorage.setItem('nutrilens-onboarded', '1')
+      }
       sessionStorage.setItem('e2e-init', '1')
-    }
-  })
+    },
+    { firstRun: !!opts.firstRun },
+  )
 }
+
 
 export async function openTab(page: Page, name: 'Today' | 'Insights' | 'Nutrients' | 'Goals') {
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name }).click()

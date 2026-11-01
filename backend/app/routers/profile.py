@@ -36,7 +36,7 @@ def get_profile(user: User = Depends(current_user)):
 def update_profile(body: ProfileIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
     data = body.model_dump()
     name = data.pop("name")
-    if name:
+    if name is not None:
         user.name = name.strip()
     for field, value in data.items():
         setattr(user.profile, field, value)

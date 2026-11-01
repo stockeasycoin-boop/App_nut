@@ -14,7 +14,7 @@ def ensure_demo_user(db: Session) -> User:
     user = db.get(User, DEMO_USER_ID)
     if user:
         return user
-    user = User(id=DEMO_USER_ID, name="Abhi")
+    user = User(id=DEMO_USER_ID, name="")  # filled in by onboarding
     profile = Profile(user=user, target_kg=68, diets=["Eggetarian"])
     db.add_all([user, profile])
     db.flush()

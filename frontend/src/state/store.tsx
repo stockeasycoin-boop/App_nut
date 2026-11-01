@@ -21,6 +21,25 @@ export type Tab = 'today' | 'insights' | 'nutrients' | 'profile'
 export type Theme = 'system' | 'light' | 'dark'
 
 const THEME_KEY = 'nutrilens-theme'
+const SIGNED_IN_KEY = 'nutrilens-signed-in'
+const ONBOARDED_KEY = 'nutrilens-onboarded'
+
+function readFlag(key: string) {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeFlag(key: string, on: boolean) {
+  try {
+    if (on) localStorage.setItem(key, '1')
+    else localStorage.removeItem(key)
+  } catch {
+    /* storage unavailable — flag lasts for this session */
+  }
+}
 
 function readTheme(): Theme {
   try {
@@ -41,6 +60,12 @@ interface Toast {
 type LoadState = 'loading' | 'ready' | 'error'
 
 interface AppState {
+  /** First-run gate: the login screen, then the "About you" onboarding. */
+  signedIn: boolean
+  onboarded: boolean
+  signIn: () => void
+  signOut: () => void
+  finishOnboarding: () => void
   tab: Tab
   setTab: (t: Tab) => void
   status: LoadState
@@ -80,6 +105,8 @@ const Ctx = createContext<AppState | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<Tab>('today')
+  const [signedIn, setSignedIn] = useState(() => readFlag(SIGNED_IN_KEY))
+  const [onboarded, setOnboarded] = useState(() => readFlag(ONBOARDED_KEY))
   const [status, setStatus] = useState<LoadState>('loading')
   const [serverMode, setServerMode] = useState(isServerMode())
   const [meals, setMeals] = useState<Meal[]>([])
@@ -209,6 +236,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const closeFoodSearch = useCallback(() => setFoodSearchOpen(false), [])
 
   const value: AppState = {
+    signedIn,
+    onboarded,
+    signIn: () => {
+      writeFlag(SIGNED_IN_KEY, true)
+      setSignedIn(true)
+    },
+    signOut: () => {
+      // Signing out only closes the app; the log, profile and goals stay put.
+      writeFlag(SIGNED_IN_KEY, false)
+      setSignedIn(false)
+      setTab('today')
+      setScanOpen(false)
+      setOpenMeal(null)
+    },
+    finishOnboarding: () => {
+      writeFlag(ONBOARDED_KEY, true)
+      setOnboarded(true)
+      setTab('today')
+    },
     tab,
     setTab,
     status,

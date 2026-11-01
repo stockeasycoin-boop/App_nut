@@ -40,7 +40,7 @@ CORS allows the local dev servers, the Android app (`http://localhost`, `capacit
 
 ## Goals
 
-Calories: Mifflin-St Jeor BMR × activity factor, −500 kcal to lose / +300 to gain (never below 1,500 men / 1,200 women), rounded to 50. Macros from the chosen split (balanced, high protein, low carb, keto). Fiber 14 g per 1,000 kcal; sugar and saturated fat ≤10 % of energy. Vitamins and minerals use the US/Canada Dietary Reference Intakes for the user's age and sex.
+Calories: Mifflin-St Jeor BMR × activity factor, −500 kcal to lose / +300 to gain (never below 1,500 men / 1,200 women), rounded to 50. Macros from the chosen split: **by body weight** (the onboarding default: protein 2.0 / 1.6 / 1.8 g per kg to lose / maintain / gain, fat 27% of energy, carbs the remainder), or balanced, high protein, low carb, keto. If sex isn't given, the BMR uses the midpoint of the two formulas (−78) and each vitamin/mineral target is the higher of the male and female values. Fiber 14 g per 1,000 kcal; sugar and saturated fat ≤10 % of energy. Vitamins and minerals use the US/Canada Dietary Reference Intakes for the user's age and sex.
 
 ## Known gaps
 

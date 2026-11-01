@@ -4,6 +4,7 @@ import './styles/global.css'
 import './styles/today.css'
 import './styles/screens.css'
 import './styles/scan.css'
+import './styles/onboarding.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
