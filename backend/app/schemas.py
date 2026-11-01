@@ -91,15 +91,15 @@ class GoalsUpdate(Schema):
 
 
 class ProfileIn(Schema):
-    name: str | None = Field(None, min_length=1, max_length=80)
-    sex: Literal["male", "female"]
+    name: str | None = Field(None, max_length=80)  # optional in onboarding; "" clears it
+    sex: Literal["male", "female", "unspecified"]
     age: int = Field(ge=19, le=110)
     height_cm: float = Field(ge=100, le=250)
     weight_kg: float = Field(ge=30, le=300)
     target_kg: float | None = Field(None, ge=30, le=300)
     activity: Literal["sedentary", "light", "moderate", "active", "athlete"]
     aim: Literal["lose", "maintain", "gain"]
-    macro_preset: Literal["balanced", "protein", "lowcarb", "keto"]
+    macro_preset: Literal["balanced", "protein", "lowcarb", "keto", "bodyweight"]
     diets: list[str] = Field(default_factory=list, max_length=20)
 
 

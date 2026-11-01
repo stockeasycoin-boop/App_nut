@@ -21,7 +21,7 @@ test.beforeEach(async ({ app }) => {
 
 test('empty day loads from the server', async ({ app, request }) => {
   await app.goto('/')
-  await expect(app.getByRole('heading', { level: 1 })).toContainText('Abhi')
+  await expect(app.getByRole('heading', { level: 1 })).toHaveText(/^Good (morning|afternoon|evening)$/) // no name until onboarding sets one
   await expect(app.locator('.meal')).toHaveCount(0)
   const goals = (await day(request)).goals
   await expect.poll(() => kcalLeft(app)).toBe(goals.calories)
@@ -248,5 +248,32 @@ test('server down: a clear error with retry', async ({ app }) => {
   await app.unroute(`${API}/**`)
   await app.getByRole('button', { name: 'Retry' }).click()
   await expect(app.getByRole('alert')).toHaveCount(0)
+  await expect(app.locator('.meal')).toHaveCount(2)
+})
+
+test('first run against the server: onboarding saves profile and targets there', async ({ app, request }) => {
+  await app.goto('/')
+  await app.evaluate(() => {
+    localStorage.removeItem('nutrilens-signed-in')
+    localStorage.removeItem('nutrilens-onboarded')
+  })
+  await app.reload()
+  await expect(app.getByText('Your log is kept on your NutriLens server.')).toBeVisible()
+  await app.getByRole('button', { name: 'Log in' }).click()
+  await app.getByLabel('Name').fill('Sam')
+  await app.getByLabel('Age').fill('30')
+  await app.getByLabel('Height').fill('170')
+  await app.getByLabel('Weight').fill('70')
+  await app.getByRole('radio', { name: /Build muscle/ }).click()
+  await app.getByRole('button', { name: 'Calculate my targets' }).click()
+  await expect(app.getByRole('heading', { level: 1 })).toContainText('Sam')
+
+  const profile = await (await request.get(`${API}/v1/profile`)).json()
+  expect(profile).toMatchObject({ name: 'Sam', sex: 'unspecified', aim: 'gain', macroPreset: 'bodyweight', weightKg: 70 })
+  const goals = await (await request.get(`${API}/v1/goals`)).json()
+  expect(goals.custom).toEqual([])
+  expect(goals.values.protein).toBe(126) // 70 kg × 1.8 g/kg
+  expect(goals.values.iron).toBe(18)
+  // On a server the existing log is kept.
   await expect(app.locator('.meal')).toHaveCount(2)
 })

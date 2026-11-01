@@ -75,7 +75,7 @@ export function Today() {
           <div className="eyebrow">{dateLabel}</div>
           <h1 className="h1">
             {greeting()}
-            {profile ? `, ${profile.name}` : ''}
+            {profile?.name ? `, ${profile.name}` : ''}
           </h1>
         </div>
         <div className="today-head-actions">

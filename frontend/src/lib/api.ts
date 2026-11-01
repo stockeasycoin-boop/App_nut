@@ -77,10 +77,10 @@ export interface ScanResult {
   demo?: boolean
 }
 
-export type Sex = 'male' | 'female'
+export type Sex = 'male' | 'female' | 'unspecified'
 export type Activity = 'sedentary' | 'light' | 'moderate' | 'active' | 'athlete'
 export type Aim = 'lose' | 'maintain' | 'gain'
-export type Preset = 'balanced' | 'protein' | 'lowcarb' | 'keto'
+export type Preset = 'balanced' | 'protein' | 'lowcarb' | 'keto' | 'bodyweight'
 
 export interface Profile {
   name: string
@@ -238,10 +238,12 @@ interface DemoState {
   days: Record<string, { meals: Meal[]; water: number }>
   goals: Record<NutrientKey, number>
   profile: Profile
+  /** True while the device shows the sample day and history; onboarding clears it. */
+  sample?: boolean
 }
 
 const DEMO_PROFILE: Profile = {
-  name: 'Abhi',
+  name: '',
   sex: 'male',
   age: 28,
   heightCm: 176,
@@ -263,7 +265,16 @@ function demo(): DemoState {
       /* corrupted — start fresh */
     }
   }
-  return { days: { [localDate()]: { meals: TODAY_MEALS, water: 5 } }, goals: DEFAULT_GOALS, profile: DEMO_PROFILE }
+  return { days: { [localDate()]: { meals: TODAY_MEALS, water: 5 } }, goals: DEFAULT_GOALS, profile: DEMO_PROFILE, sample: true }
+}
+
+/** On-device mode only: drop the sample day and history so a new user starts with a clean log. */
+export function startFreshOnDevice() {
+  if (isServerMode()) return
+  saveDemo((s) => {
+    s.days = {}
+    s.sample = false
+  })
 }
 
 function saveDemo(update: (s: DemoState) => void) {
@@ -433,7 +444,7 @@ export async function fetchHistory(days: number, goals: Record<NutrientKey, numb
     const d = new Date()
     d.setDate(d.getDate() - i)
     const key = localDate(d)
-    const logged = s.days[key]
+    const logged = s.days[key] ?? (s.sample === false ? { meals: [], water: 0 } : undefined)
     if (logged) {
       const t = dayTotal(logged.meals)
       out.push({ date: key, totals: t, micro: logged.meals.length ? microCoverage(t, goals, micro) : 0, meals: logged.meals.length })
@@ -447,7 +458,7 @@ export async function fetchHistory(days: number, goals: Record<NutrientKey, numb
     const k = row.key as NutrientKey
     const offset = row.values.length - out.length
     percentOfGoal[k] = out.map((d, idx) =>
-      s.days[d.date] ? Math.round((100 * (d.totals[k] ?? 0)) / goals[k]) : row.values[(((idx + offset) % row.values.length) + row.values.length) % row.values.length],
+      s.days[d.date] || s.sample === false ? Math.round((100 * (d.totals[k] ?? 0)) / goals[k]) : row.values[(((idx + offset) % row.values.length) + row.values.length) % row.values.length],
     )
   }
   return { days: out, percentOfGoal }
@@ -464,12 +475,12 @@ export async function fetchProfile(): Promise<Profile> {
  */
 export async function saveProfileAndGoals(profile: Profile, customCalories: number | null): Promise<{ profile: Profile; goals: Record<NutrientKey, number> }> {
   const kcal = customCalories ?? computeCalories(profile)
-  const macros = macroGrams(kcal, profile.macroPreset)
+  const macros = macroGrams(kcal, profile.macroPreset, profile.weightKg, profile.aim)
   if (!isServerMode()) {
     let goals = DEFAULT_GOALS
     saveDemo((s) => {
       s.profile = { ...profile, maintenanceKcal: computeCalories({ ...profile, aim: 'maintain' }) }
-      s.goals = { ...s.goals, calories: kcal, ...macros, fiber: Math.round((kcal / 1000) * 14) }
+      s.goals = { ...s.goals, ...computeGoals(profile), calories: kcal, ...macros }
       goals = s.goals
     })
     return { profile: demo().profile, goals }
@@ -487,6 +498,8 @@ export async function saveProfileAndGoals(profile: Profile, customCalories: numb
 const ACTIVITY: Record<Activity, number> = { sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, athlete: 1.9 }
 const AIM: Record<Aim, number> = { lose: -500, maintain: 0, gain: 300 }
 export const PRESETS: Record<Preset, { label: string; p: number; c: number; f: number }> = {
+  // p/c/f are shares of energy; "bodyweight" works from grams instead (see macroGrams).
+  bodyweight: { label: 'By body weight', p: 0, c: 0, f: 27 },
   balanced: { label: 'Balanced', p: 25, c: 45, f: 30 },
   protein: { label: 'High protein', p: 35, c: 40, f: 25 },
   lowcarb: { label: 'Low carb', p: 30, c: 25, f: 45 },
@@ -494,13 +507,76 @@ export const PRESETS: Record<Preset, { label: string; p: number; c: number; f: n
 }
 
 export function computeCalories(p: Pick<Profile, 'sex' | 'age' | 'heightCm' | 'weightKg' | 'activity' | 'aim'>) {
-  const bmr = 10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age + (p.sex === 'male' ? 5 : -161)
-  const kcal = Math.max(p.sex === 'male' ? 1500 : 1200, bmr * ACTIVITY[p.activity] + AIM[p.aim])
+  const offset = p.sex === 'male' ? 5 : p.sex === 'female' ? -161 : -78 // midpoint when not given
+  const bmr = 10 * p.weightKg + 6.25 * p.heightCm - 5 * p.age + offset
+  const kcal = Math.max(p.sex === 'female' ? 1200 : 1500, bmr * ACTIVITY[p.activity] + AIM[p.aim])
   return Math.round(kcal / 50) * 50
 }
 
-export function macroGrams(kcal: number, preset: Preset) {
+const PROTEIN_PER_KG: Record<Aim, number> = { lose: 2.0, maintain: 1.6, gain: 1.8 }
+
+export function macroGrams(kcal: number, preset: Preset, weightKg: number, aim: Aim) {
+  if (preset === 'bodyweight') {
+    // Protein from body weight, fat 27% of energy, carbs fill the rest.
+    const protein = Math.round(weightKg * PROTEIN_PER_KG[aim])
+    const fat = Math.round((kcal * 0.27) / 9)
+    return { protein, fat, carbs: Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4)) }
+  }
   const x = PRESETS[preset]
   return { protein: Math.round((kcal * x.p) / 400), carbs: Math.round((kcal * x.c) / 400), fat: Math.round((kcal * x.f) / 900) }
+}
+
+/** Share of energy from each macro, for any preset. */
+export function macroSplit(g: { protein: number; carbs: number; fat: number }) {
+  const e = g.protein * 4 + g.carbs * 4 + g.fat * 9 || 1
+  return { p: Math.round((g.protein * 400) / e), c: Math.round((g.carbs * 400) / e), f: Math.round((g.fat * 900) / e) }
+}
+
+/** US/Canada Dietary Reference Intakes for adults 19+ (mirrors reference_intakes in the backend). */
+export function referenceIntakes(sex: Sex, age: number): Partial<Record<NutrientKey, number>> {
+  if (sex === 'unspecified') {
+    const m = referenceIntakes('male', age)
+    const f = referenceIntakes('female', age)
+    return Object.fromEntries(Object.keys(m).map((k) => [k, Math.max(m[k as NutrientKey]!, f[k as NutrientKey]!)]))
+  }
+  const male = sex === 'male'
+  const older = age >= 51
+  return {
+    omega3: male ? 1.6 : 1.1,
+    vitA: male ? 900 : 700,
+    vitC: male ? 90 : 75,
+    vitD: age >= 71 ? 20 : 15,
+    vitE: 15,
+    vitK: male ? 120 : 90,
+    b1: male ? 1.2 : 1.1,
+    b2: male ? 1.3 : 1.1,
+    b3: male ? 16 : 14,
+    b6: older ? (male ? 1.7 : 1.5) : 1.3,
+    b12: 2.4,
+    folate: 400,
+    calcium: age >= 71 || (!male && older) ? 1200 : 1000,
+    iron: male || older ? 8 : 18,
+    magnesium: male ? (age <= 30 ? 400 : 420) : age <= 30 ? 310 : 320,
+    potassium: male ? 3400 : 2600,
+    zinc: male ? 11 : 8,
+    selenium: 55,
+    phosphorus: 700,
+    sodium: 2300,
+    cholesterol: 300,
+  }
+}
+
+/** Every daily target for a profile (mirrors default_goals in the backend). */
+export function computeGoals(p: Pick<Profile, 'sex' | 'age' | 'heightCm' | 'weightKg' | 'activity' | 'aim' | 'macroPreset'>): Record<NutrientKey, number> {
+  const kcal = computeCalories(p)
+  return {
+    ...DEFAULT_GOALS,
+    ...referenceIntakes(p.sex, p.age),
+    calories: kcal,
+    ...macroGrams(kcal, p.macroPreset, p.weightKg, p.aim),
+    fiber: Math.round((kcal / 1000) * 14),
+    sugar: Math.round((kcal * 0.1) / 4),
+    satFat: Math.round((kcal * 0.1) / 9),
+  }
 }
 

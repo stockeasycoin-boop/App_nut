@@ -1,14 +1,15 @@
 import { motion } from 'motion/react'
-import { ChevronRight, HeartPulse, Info, Server, Ruler } from 'lucide-react'
+import { ChevronRight, HeartPulse, Info, LogOut, Server, Ruler } from 'lucide-react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useApp } from '../state/store'
 import { Segmented } from '../components/Segmented'
 import { Sheet } from '../components/Sheet'
-import { PRESETS, computeCalories, getServerUrl, macroGrams, saveProfileAndGoals, setServerUrl, testServer, type Activity, type Aim, type Preset, type Profile as ProfileT } from '../lib/api'
+import { PRESETS, computeCalories, getServerUrl, macroGrams, macroSplit, saveProfileAndGoals, setServerUrl, testServer, type Activity, type Aim, type Preset, type Profile as ProfileT, type Sex } from '../lib/api'
 import { fmt } from '../lib/nutrition'
 
 const DIETS = ['Vegetarian', 'Eggetarian', 'Vegan', 'Jain', 'Gluten‑free', 'Lactose‑free', 'Nut allergy']
-const ACTIVITY_LABEL: Record<Activity, string> = {
+export const SEX_LABEL: Record<Sex, string> = { male: 'Male', female: 'Female', unspecified: 'Sex not given' }
+export const ACTIVITY_LABEL: Record<Activity, string> = {
   sedentary: 'Sedentary',
   light: 'Lightly active',
   moderate: 'Moderately active',
@@ -23,7 +24,7 @@ const fade = (i: number) => ({
 })
 
 export function Profile() {
-  const { goals, setGoals, profile, setProfile, showToast, theme, setTheme, serverMode, reload } = useApp()
+  const { goals, setGoals, profile, setProfile, showToast, theme, setTheme, serverMode, reload, signOut } = useApp()
   const [draft, setDraft] = useState<ProfileT | null>(profile)
   const [customKcal, setCustomKcal] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
@@ -40,8 +41,8 @@ export function Profile() {
 
   const autoKcal = computeCalories(draft)
   const kcal = customKcal ?? (draftChanged(draft, profile) ? autoKcal : goals.calories)
-  const grams = macroGrams(kcal, draft.macroPreset)
-  const pr = PRESETS[draft.macroPreset]
+  const grams = macroGrams(kcal, draft.macroPreset, draft.weightKg, draft.aim)
+  const pr = macroSplit(grams)
   const bmi = draft.weightKg / (draft.heightCm / 100) ** 2
   const maintenance = computeCalories({ ...draft, aim: 'maintain' })
   const weeks = draft.targetKg && draft.aim === 'lose' && kcal < maintenance ? Math.round(((draft.weightKg - draft.targetKg) * 7700) / ((maintenance - kcal) * 7)) : 0
@@ -72,11 +73,11 @@ export function Profile() {
       </motion.header>
 
       <motion.button className="profile-card" {...fade(1)} onClick={() => setEditing(true)} aria-label="Edit profile">
-        <div className="avatar">{draft.name[0]?.toUpperCase()}</div>
+        <div className="avatar">{draft.name ? draft.name[0].toUpperCase() : '🙂'}</div>
         <div className="profile-main">
-          <b>{draft.name}</b>
+          <b>{draft.name || 'Your profile'}</b>
           <span>
-            {draft.age} yrs · {draft.sex === 'male' ? 'Male' : 'Female'} · {ACTIVITY_LABEL[draft.activity]}
+            {draft.age} yrs · {SEX_LABEL[draft.sex]} · {ACTIVITY_LABEL[draft.activity]}
           </span>
         </div>
         <ChevronRight size={18} style={{ opacity: 0.6 }} />
@@ -226,7 +227,7 @@ export function Profile() {
           <div>
             <b>Recommended daily intakes</b>
             <span>
-              19 vitamins & minerals for a {draft.age}-year-old {draft.sex}, updated when your profile changes
+              19 vitamins & minerals for {draft.age}-year-olds{draft.sex === 'unspecified' ? '' : ` (${draft.sex})`}, updated when your profile changes
             </span>
           </div>
         </div>
@@ -274,6 +275,13 @@ export function Profile() {
           <span className="set-label">Version</span>
           <span className="set-val">{__APP_VERSION__}</span>
         </div>
+        <button className="set-row" onClick={signOut}>
+          <span className="set-ic">
+            <LogOut size={18} />
+          </span>
+          <span className="set-label">Sign out</span>
+          <span className="set-val">Your log stays saved</span>
+        </button>
       </motion.section>
 
       <ProfileEditor
@@ -340,7 +348,7 @@ function ProfileEditor({ open, profile, onClose, onApply }: { open: boolean; pro
     if (open) setP(profile)
   }, [open, profile])
   const set = (patch: Partial<ProfileT>) => setP((x) => ({ ...x, ...patch }))
-  const valid = p.name.trim().length > 0 && p.age >= 19 && p.age <= 110 && p.heightCm >= 100 && p.heightCm <= 250 && p.weightKg >= 30 && p.weightKg <= 300
+  const valid = p.age >= 19 && p.age <= 110 && p.heightCm >= 100 && p.heightCm <= 250 && p.weightKg >= 30 && p.weightKg <= 300
 
   return (
     <Sheet open={open} onClose={onClose}>
@@ -349,15 +357,16 @@ function ProfileEditor({ open, profile, onClose, onApply }: { open: boolean; pro
       </h2>
       <label className="text-field">
         <span>Name</span>
-        <input value={p.name} maxLength={80} onChange={(e) => set({ name: e.target.value })} aria-label="Name" />
+        <input value={p.name} maxLength={80} placeholder="Optional" onChange={(e) => set({ name: e.target.value })} aria-label="Name" />
       </label>
       <div style={{ margin: '12px 0' }}>
         <Segmented
           value={p.sex}
           onChange={(sex) => set({ sex })}
           options={[
-            { value: 'male', label: 'Male' },
             { value: 'female', label: 'Female' },
+            { value: 'male', label: 'Male' },
+            { value: 'unspecified', label: 'Not say' },
           ]}
         />
       </div>

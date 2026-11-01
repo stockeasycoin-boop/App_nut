@@ -36,3 +36,22 @@ def test_health_score_prefers_nutrient_dense_meals():
 def test_match_requires_close_names():
     assert match("Grilled salmon").id == "salmon"
     assert match("unicorn stew") is None
+
+
+def test_bodyweight_preset_matches_onboarding_rules():
+    # 72 kg, losing weight: 2.0 g/kg protein, fat 27% of energy, carbs the remainder.
+    g = default_goals("male", 28, 176, 72, "moderate", "lose", "bodyweight")
+    assert g["calories"] == 2100
+    assert g["protein"] == 144
+    assert g["fat"] == int(2100 * 0.27 / 9 + 0.5)
+    assert g["carbs"] == int((2100 - 144 * 4 - g["fat"] * 9) / 4 + 0.5)
+    assert default_goals("male", 28, 176, 72, "moderate", "gain", "bodyweight")["protein"] == round(72 * 1.8)
+
+
+def test_unspecified_sex_uses_midpoint_bmr_and_the_higher_rda():
+    m = calorie_target("male", 30, 170, 70, "sedentary", "maintain")
+    f = calorie_target("female", 30, 170, 70, "sedentary", "maintain")
+    u = calorie_target("unspecified", 30, 170, 70, "sedentary", "maintain")
+    assert f < u < m
+    g = default_goals("unspecified", 30, 170, 70, "sedentary", "maintain", "balanced")
+    assert g["iron"] == 18 and g["vitC"] == 90 and g["potassium"] == 3400
