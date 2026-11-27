@@ -25,15 +25,20 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-34 build-tools;34.0.0
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Add Android platform
         run: npx cap add android
 
       - name: Sync web app into Android project
         run: npx cap sync android
+
+      - name: Point Gradle at the Android SDK
+        run: echo "sdk.dir=${ANDROID_HOME}" >> android/local.properties
 
       - name: Build debug APK
         run: |
