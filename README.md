@@ -1,5 +1,7 @@
 # Plate — nutrition tracker Android APK (Groq-powered)
 
+Plate keeps its **editorial UI** and uses a **solo-leveling-fitness-style backend**: on-device XP/ranks, city-based protein tips, and Groq meal suggestions (`www/lib/plate-backend.js`). See [docs/GOOGLE_PLAY.md](docs/GOOGLE_PLAY.md) for Play Store upload steps.
+
 Photo-based nutrition tracker. Snap a picture of your food and the app estimates
 calories, protein, carbs, fat, fiber, sugar, sodium, and key micronutrients, then
 tracks everything against your daily goals. AI analysis runs on **Groq's free tier**
