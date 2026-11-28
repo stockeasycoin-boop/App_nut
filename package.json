@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Plate — photo-based nutrition and micronutrient tracker",
   "private": true,
+  "scripts": {
+    "sync:android": "npx cap sync android",
+    "build:aab": "bash scripts/build-play-aab.sh"
+  },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0"
   },

@@ -1,0 +1,14 @@
+Plate is a beautiful, simple nutrition tracker for Android.
+
+• Log food with a photo, a short description, or manual entry
+• Daily calorie ring and macro rings (protein, carbs, fat, fiber)
+• Sugar, sodium, and key micronutrient targets you can edit
+• Rank, XP, and streak rewards when you stay on track
+• AI meal ideas and local protein tips (optional Groq API key — free tier)
+• Everything stays on your device — no account required
+
+Set your profile once. Targets use standard formulas (you can tweak them in Settings). Snap a plate, adjust the portion slider, and save.
+
+Groq powers optional photo and text analysis and meal suggestions. Each user adds their own free API key in Settings; keys are never sent to us.
+
+Plate is for personal tracking, not medical advice. Talk to a clinician before following an aggressive calorie deficit.

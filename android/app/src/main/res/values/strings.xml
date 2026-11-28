@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Plate</string>
+    <string name="title_activity_main">Plate</string>
+    <string name="package_name">com.stockeasy.plate</string>
+    <string name="custom_url_scheme">com.stockeasy.plate</string>
+</resources>
